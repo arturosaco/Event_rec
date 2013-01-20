@@ -2,11 +2,37 @@ library('ProjectTemplate')
 load.project()
 
 train <- read.csv("data/train.csv")
+test <- read.csv("data/test.csv")
 att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
 users <- read.csv("data/users.csv", stringsAsFactors = FALSE)
-users.fr <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
+users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
 events <- read.csv("data/events.csv", stringsAsFactors = FALSE, 
   nrows = 10000)
+
+# =================
+# = General stuff =
+# =================
+
+#we have many more user profiles in "users" than users in "test" and "train"
+nrow(test)
+length(unique(test$user))
+nrow(train)
+length(unique(train$user))
+#sanity checks
+nrow(att)
+length(unique(att$event))
+nrow(users)
+length(unique(users$user_id))
+
+#none of the users in test is in train (we have no exact user history)
+head(train)
+head(test)
+train[unique(test$user) %in% unique(train$user),]
+
+#all users from train and test are provided with a profile
+train[!(unique(train$user) %in% users$user_id),]
+test[!(unique(test$user) %in% users$user_id),]
+
 
 # ===========================
 # = Explore attendance data =
@@ -86,3 +112,32 @@ princomp(words[,c(-1, -ncol(words))])
 corrgram(words[,c(-1, -ncol(words))], order=NULL, lower.panel=panel.shade,
   upper.panel=NULL, text.panel=panel.txt,
   main="Car Milage Data (unsorted)")
+
+# =============================
+# = Exploration users friends =
+# =============================
+
+class(users.friends)
+dim(users.friends)
+names(users.friends)
+
+#check how many users are listed as friends
+users.friends$friends<-as.character(users.friends$friends)
+users.friends$friends<-strsplit(users.friends$friends,' ')
+
+# Determination of the number of friends, for the first entry
+number.friends<-length(users.friends$friends[[1]])
+
+# Reading the index first friend
+ind.friends.first<-as.numeric(users.friends$friends[[1]][1])
+
+# Reading the index of the last friend
+ind.friends.last<-as.numeric(users.friends$friends[[1]][number.friends])
+
+number.friends
+ind.friends.first
+ind.friends.last
+
+#create a 2 column matrix (User, Users friends) instead of a data.frame
+# crashed R - vector size exceeeds 720 MB
+#vect.users.friends <- do.call(rbind, users.friends$friends)
