@@ -34,19 +34,25 @@ ev.ids <- att$event
 rm(att)
 gc()
 
-file <- "data/events.csv"
+system.file({
+  file <- "data/events.csv"
 
-f <- file(file,'r')
-readLines(f, n = 1)
-ev.temp <- readLines(f)
-ev.id.temp <- gsub(',.*', "", ev.temp)
-out <- ev.temp[ev.id.temp %in% ev.ids]
-out <- strsplit(out, ",")
-out <- do.call(c, out)
-out <- matrix(out, nrow = length(out) / length(names.aux), 
-  ncol = length(names.aux), byrow = TRUE, dimnames = list(NULL, names.aux))
-close(f)
-event.att <- data.frame(out)
+  f <- file(file,'r')
+  invisible(readLines(f, n = 1))
+  ev.temp <- readLines(f)
+  ev.id.temp <- gsub(',.*', "", ev.temp)
+  out <- ev.temp[ev.id.temp %in% ev.ids]
+  out <- strsplit(out, ",")
+  out <- do.call(c, out)
+  out <- as.data.frame(matrix(out, nrow = length(out) / length(names.aux), 
+    ncol = length(names.aux), byrow = TRUE, dimnames = list(NULL, names.aux)))
+  close(f)
+  for(int in grep("c_", names(out), value = TRUE)){
+    out[, int] <- as.numeric(out[, int])
+  }
+
+  event.att <- out
+})
 
 train <- read.csv("data/train.csv")
 test <- read.csv("data/test.csv")
@@ -137,15 +143,19 @@ train.mat <- acast(train.sub, event ~ user, value.var = "interested.num",
 # = Exploration events =
 # ======================
 
-words <- events[, c("event_id",grep("c_", names(events), value = TRUE))]
+
+words <- cbind(event.att$event_id, 
+  as.matrix(event.att[, grep("c_", names(event.att), value = TRUE)]))
 words.m <- melt(words, id.vars = "event_id")
+words.m$value <- as.numeric(words.m$value)
 res <- ddply(words.m, "variable", function(sub){
-    as.numeric(summary(sub$value))
+    as.numeric(summary(as.numeric(sub$value)))
   })
 
 names(res) <- c("variable", c("min", "firstQ", "median", "mean", "thirdQ", "max"))
 res$variable <- reorder(res$variable, res$mean, decreasing = TRUE)
-ggplot(res[res$variable!= "c_other", ], aes(x = variable, y = mean, ymin = 
+ggplot(res[res$variable!= "c_other" & res$mean > median(res$mean), ],
+  aes(x = variable, y = mean, ymin = 
   firstQ, ymax = thirdQ)) +
   geom_point() + geom_linerange() + coord_flip()
 
