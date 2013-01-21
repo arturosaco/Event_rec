@@ -33,7 +33,7 @@ names.aux <- names(events.aux)
 train <- read.csv("data/train.csv")
 test <- read.csv("data/test.csv")
 
-ev.ids <- union(att$event, train$event, test$event)
+ev.ids <- union(union(att$event, train$event), test$event)
 rm(att, train, test)
 gc()
 
