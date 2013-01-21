@@ -34,7 +34,7 @@ ev.ids <- att$event
 rm(att)
 gc()
 
-system.file({
+system.time({
   file <- "data/events.csv"
 
   f <- file(file,'r')
