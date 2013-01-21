@@ -30,8 +30,11 @@ names.aux <- names(events.aux)
 ### Read the events csv sequentially and filter out those events that are NOT
 ### in the attendance file 
 
-ev.ids <- att$event
-rm(att)
+train <- read.csv("data/train.csv")
+test <- read.csv("data/test.csv")
+
+ev.ids <- union(att$event, train$event, test$event)
+rm(att, train, test)
 gc()
 
 system.time({
