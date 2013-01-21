@@ -1,6 +1,27 @@
 library('ProjectTemplate')
 load.project()
 
+# =============
+# = Functions =
+# =============
+
+date.FromTimeStamp <- function(TimeStamp)
+{
+  resDate <- strsplit(TimeStamp,"T")  
+  resDate <- as.Date(resDate[[1]][1]) 
+}
+
+hour.FromTimeStamp <- function(TimeStamp)
+{
+  resHour <- strsplit(TimeStamp,"T")
+  resHour <- strsplit(resHour[[1]][2],":")
+  resHour <- as.character(resHour[[1]][1]) 
+}
+
+# ========
+# = Data =
+# ========
+
 train <- read.csv("data/train.csv")
 test <- read.csv("data/test.csv")
 att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
@@ -8,6 +29,8 @@ users <- read.csv("data/users.csv", stringsAsFactors = FALSE)
 users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
 events <- read.csv("data/events.csv", stringsAsFactors = FALSE, 
   nrows = 10000)
+
+
 
 # =================
 # = General stuff =
@@ -141,3 +164,6 @@ ind.friends.last
 #create a 2 column matrix (User, Users friends) instead of a data.frame
 # crashed R - vector size exceeeds 720 MB
 #vect.users.friends <- do.call(rbind, users.friends$friends)
+
+
+
