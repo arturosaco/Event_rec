@@ -22,11 +22,7 @@ hour.FromTimeStamp <- function(TimeStamp)
 # = Data =
 # ========
 
-train <- read.csv("data/train.csv")
-test <- read.csv("data/test.csv")
 att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
-users <- read.csv("data/users.csv", stringsAsFactors = FALSE)
-users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
 events.aux <- read.csv("data/events.csv", stringsAsFactors = FALSE, 
   nrows = 100)
 names.aux <- names(events.aux)
@@ -41,39 +37,21 @@ gc()
 file <- "data/events.csv"
 
 f <- file(file,'r')
-ev.temp <- readLines(f, n = 1)
-# out <- list()
-# k <- 1
-# while (length(ev.temp) > 0 & k <= 1){
-#   ev.temp <- readLines(f, n = 1000000)
-#   ev.id.temp <- gsub(',.*', "", ev.temp)
-#   out[[k]] <- ev.temp[ev.id.temp %in% ev.ids]
-#   k <- k + 1
-# }
-
+readLines(f, n = 1)
 ev.temp <- readLines(f)
 ev.id.temp <- gsub(',.*', "", ev.temp)
 out <- ev.temp[ev.id.temp %in% ev.ids]
-
-# out <- Reduce(c, out)
-
-### takes 10 min to run 
-
-system.time({
-  out.1 <- Reduce(c, strsplit(out, ","))
-  })
-rm(out)
-gc()
-###
-
-
-out.2 <- matrix(out.1, nrow = length(out.1), 
+out <- strsplit(out, ",")
+out <- do.call(c, out)
+out <- matrix(out, nrow = length(out) / length(names.aux), 
   ncol = length(names.aux), byrow = TRUE, dimnames = list(NULL, names.aux))
-
 close(f)
-event.att <- out.2
-cache("event.att")
+event.att <- data.frame(out)
 
+train <- read.csv("data/train.csv")
+test <- read.csv("data/test.csv")
+users <- read.csv("data/users.csv", stringsAsFactors = FALSE)
+users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
 
 # =================
 # = General stuff =
