@@ -27,8 +27,43 @@ test <- read.csv("data/test.csv")
 att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
 users <- read.csv("data/users.csv", stringsAsFactors = FALSE)
 users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
-events <- read.csv("data/events.csv", stringsAsFactors = FALSE, 
-  nrows = 10000)
+events.aux <- read.csv("data/events.csv", stringsAsFactors = FALSE, 
+  nrows = 100)
+names.aux <- names(events.aux)
+
+### Read the events csv sequentially and filter out those events that are NOT
+### in the attendance file 
+
+ev.ids <- att$event
+rm(att)
+gc()
+
+file <- "data/events.csv"
+
+f <- file(file,'r')
+ev.temp <- readLines(f, n = 1)
+# out <- list()
+# k <- 1
+# while (length(ev.temp) > 0 & k <= 1){
+#   ev.temp <- readLines(f, n = 1000000)
+#   ev.id.temp <- gsub(',.*', "", ev.temp)
+#   out[[k]] <- ev.temp[ev.id.temp %in% ev.ids]
+#   k <- k + 1
+# }
+
+ev.temp <- readLines(f)
+ev.id.temp <- gsub(',.*', "", ev.temp)
+out <- ev.temp[ev.id.temp %in% ev.ids]
+
+# out <- Reduce(c, out)
+system.time({
+  out.1 <- Reduce(c, strsplit(out, ","))
+  })
+
+out.2 <- matrix(out.1, nrow = length(out.1), 
+  ncol = length(names.aux), byrow = TRUE, dimnames = list(NULL, names.aux))
+
+close(f)
 
 
 
