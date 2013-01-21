@@ -56,15 +56,23 @@ ev.id.temp <- gsub(',.*', "", ev.temp)
 out <- ev.temp[ev.id.temp %in% ev.ids]
 
 # out <- Reduce(c, out)
+
+### takes 10 min to run 
+
 system.time({
   out.1 <- Reduce(c, strsplit(out, ","))
   })
+rm(out)
+gc()
+###
+
 
 out.2 <- matrix(out.1, nrow = length(out.1), 
   ncol = length(names.aux), byrow = TRUE, dimnames = list(NULL, names.aux))
 
 close(f)
-
+event.att <- out.2
+cache("event.att")
 
 
 # =================
@@ -159,7 +167,8 @@ res <- ddply(words.m, "variable", function(sub){
 
 names(res) <- c("variable", c("min", "firstQ", "median", "mean", "thirdQ", "max"))
 res$variable <- reorder(res$variable, res$mean, decreasing = TRUE)
-ggplot(res[res$variable!= "c_other", ], aes(x = variable, y = mean, ymin = firstQ, ymax = thirdQ)) +
+ggplot(res[res$variable!= "c_other", ], aes(x = variable, y = mean, ymin = 
+  firstQ, ymax = thirdQ)) +
   geom_point() + geom_linerange() + coord_flip()
 
 summary(apply(words[,-1], 1, sum))
