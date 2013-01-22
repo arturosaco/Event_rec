@@ -1,2 +1,4 @@
 -Register as a team on Kaggle
--
+-I've found some duplicated events id's, for instance 1083377523 and 1083377523 
+-put NA's where they go
+-replace NA's with unique missing values codes

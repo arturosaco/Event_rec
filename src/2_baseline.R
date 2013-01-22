@@ -1,6 +1,9 @@
 library(ProjectTemplate)
 load.project()
 
+# =========================
+# = Read/pre-process data =
+# =========================
 
 att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
 events.aux <- read.csv("data/events.csv", stringsAsFactors = FALSE, 
@@ -28,10 +31,7 @@ close(f)
 for(int in grep("c_", names(out), value = TRUE)){
   out[, int] <- as.numeric(out[, int])
 }
-
 event.att <- out
-
-
 names(train)[2] <- "event_id"
 train$event_id <- factor(train$event_id)
 library(reshape2)
@@ -46,20 +46,30 @@ train.1[train.1$interested == 0 &
 train.1$lat <- as.numeric(train.1$lat)
 train.1$lng <- as.numeric(train.1$lng)
 
+# =========
+# = Model =
+# =========
+
+### Train
+
 library(glmnet)
 formu <- as.formula(paste("event_id ~ ",
  paste(c("city", "state", "country",
   "lat", "lng", "c_other", paste("c", 1:100, sep = "_")), collapse = " + ")))
 X <- model.matrix(formu, data = train.1)
 
+# 10-fold cross validation
 
 cv.mod <- cv.glmnet(x = X, y = train.1$interested.num, family = "gaussian",
   nfolds = 10)
-#Lamabda min out of ten fold cross validation
+
+#Lamabda min out of 10-fold cross validation
 #0.005364677
 
 mod <- glmnet(x = X, y = train.1$interested.num, family = "gaussian", 
   lambda = 0.005364677)
+
+### Predictions
 
 test <- read.csv("data/test.csv")
 names(test)[2] <- "event_id"
@@ -85,6 +95,10 @@ X.new <- model.matrix(formu, data = test.1)
 preds <- predict(mod, newx = X.new)
 preds.1 <- data.frame(user = test.1$user, event = test.1$event_id,
   pred = preds)
+
+# ==============
+# = Submission =
+# ==============
 
 sub <- preds.1[preds.1$user == "1776192", ]
 preds.2 <- ddply(preds.1, "user", function(sub){
