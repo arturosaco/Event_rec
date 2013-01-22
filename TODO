@@ -1,4 +1,16 @@
--Register as a team on Kaggle
+TODO
+
+-crate a munge file that pre-process files
 -I've found some duplicated events id's, for instance 1083377523 and 1083377523 
 -put NA's where they go
 -replace NA's with unique missing values codes
+-Manage time data 
+-Cluster users and cluster events,  with probabilities.
+
+Features
+-obtain the country for users and events. (Vlasto)
+-for each user, number of friends that said yes, maybe, invited, no
+-for each event, ratio of the users friends that went to the event
+-temporal features
+  -#no. of events user attended last month
+  -how many events does he go each month
