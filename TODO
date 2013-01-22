@@ -14,3 +14,7 @@ Features
 -temporal features
   -#no. of events user attended last month
   -how many events does he go each month
+
+Issues
+-58 users don't have time data in variable joinedAt
+-17 repeated id's in event files (17 in the subset of the events present at attendance, train and test files)
