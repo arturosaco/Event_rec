@@ -37,5 +37,5 @@ system.time({
   for(int in c(grep("c_", names(out), value = TRUE))){
     out[, int] <- as.numeric(out[, int])
   }
-  event.att <- out
+  events <- out
 })
