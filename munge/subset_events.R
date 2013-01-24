@@ -21,21 +21,20 @@ putNAs <- function(var){
 # for(int in c("country", "city", "state", "zip")){
 #   out[, int] <- putNAs(out[, int])
 # }  
-system.time({
-  file <- "data/events.csv"
+file <- "data/events.csv"
 
-  f <- file(file,'r')
-  invisible(readLines(f, n = 1))
-  ev.temp <- readLines(f)
-  ev.id.temp <- gsub(',.*', "", ev.temp)
-  out <- ev.temp[ev.id.temp %in% ev.ids]
-  out <- strsplit(out, ",")
-  out <- do.call(c, out)
-  out <- as.data.frame(matrix(out, nrow = length(out) / length(names.aux), 
-    ncol = length(names.aux), byrow = TRUE, dimnames = list(NULL, names.aux)))
-  close(f)
-  for(int in c(grep("c_", names(out), value = TRUE))){
-    out[, int] <- as.numeric(out[, int])
-  }
-  events <- out
-})
+f <- file(file,'r')
+invisible(readLines(f, n = 1))
+ev.temp <- readLines(f)
+ev.id.temp <- gsub(',.*', "", ev.temp)
+out <- ev.temp[ev.id.temp %in% ev.ids]
+out <- strsplit(out, ",")
+out <- do.call(c, out)
+out <- as.data.frame(matrix(out, nrow = length(out) / length(names.aux), 
+  ncol = length(names.aux), byrow = TRUE, dimnames = list(NULL, names.aux)))
+close(f)
+for(int in c(grep("c_", names(out), value = TRUE))){
+  out[, int] <- as.numeric(out[, int])
+}
+events <- out
+
