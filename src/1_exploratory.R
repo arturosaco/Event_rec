@@ -9,6 +9,7 @@ train <- read.csv("data/train.csv")
 test <- read.csv("data/test.csv")
 users <- read.csv("data/users.csv", stringsAsFactors = FALSE)
 users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
+att <- read.csv("data/event_attendees.csv")
 
 train$timestamp <- read.date(train$timestamp)
 test$timestamp <- read.date(test$timestamp)
@@ -93,8 +94,8 @@ train.mat <- acast(train.sub, event ~ user, value.var = "interested.num",
 # ======================
 
 
-words <- cbind(event.att$event_id, 
-  as.matrix(event.att[, grep("c_", names(event.att), value = TRUE)]))
+words <- cbind(events$event_id, 
+  as.matrix(events[, grep("c_", names(events), value = TRUE)]))
 words.m <- melt(words, id.vars = "event_id")
 words.m$value <- as.numeric(words.m$value)
 res <- ddply(words.m, "variable", function(sub){
