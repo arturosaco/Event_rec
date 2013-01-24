@@ -1,4 +1,4 @@
-library(PojectTemplate)
+library(ProjectTemplate)
 load.project()
 
 train <- read.csv("data/train.csv")
@@ -25,4 +25,21 @@ names(friends.2) <- c("original.user", "user_id")
 users$user_id <- factor(users$user_id)
 friends.3 <- join(friends.2, users)
 
-att <- read.csv("data/event_attendees.csv")
+
+att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
+
+
+
+att.yes <- melt.ish(att[, c("event", "yes")])
+att.no <- melt.ish(att[, c("event", "no")])
+att.maybe <- melt.ish(att[, c("event", "maybe")])
+att.invited <- melt.ish(att[, c("event", "invited")])
+
+att.maybe$int.num <- 1
+att.no$int.num <- -1
+att.yes$int.num <- 2
+att.invited$int.num <- 0
+
+att.1 <- rbind(att.maybe, att.no, att.yes, att.invited, att.invited)
+friends.4 <- join(att.1[att.1$user_id %in% friends.3$user_id, ],
+ friends.3, type = "inner")
