@@ -1,0 +1,106 @@
+Albania,sq_AL
+Algeria,ar_DZ
+Bahrain,ar_BH
+Egypt,ar_EG
+Iraq,ar_IQ
+Jordan,ar_JO
+Kuwait,ar_KW
+Lebanon,ar_LB
+Libya,ar_LY
+Morocco,ar_MA
+Oman,ar_OM
+Qatar,ar_QA
+Saudi Arabia,ar_SA
+Sudan,ar_SD
+Syria,ar_SY
+Tunisia,ar_TN
+United Arab Emirates,ar_AE
+Yemen,ar_YE
+Belarus,be_BY
+Bulgaria,bg_BG
+Spain,ca_ES
+China,zh_CN
+Hong Kong,zh_HK
+Singapore,zh_SG
+Taiwan,zh_TW
+Croatia,hr_HR
+Czech Republic,cs_CZ
+Denmark,da_DK
+Belgium,nl_BE
+Netherlands,nl_NL
+Australia,en_AU
+Canada,en_CA
+India,en_IN
+Ireland,en_IE
+Malta,en_MT
+New Zealand,en_NZ
+Philippines,en_PH
+Singapore,en_SG
+South Africa,en_ZA
+United Kingdom,en_GB
+United States,en_US
+Estonia,et_EE
+Finland,fi_FI
+Belgium,fr_BE
+Canada,fr_CA
+France,fr_FR
+Luxembourg,fr_LU
+Switzerland,fr_CH
+Austria,de_AT
+Germany,de_DE
+Luxembourg,de_LU
+Switzerland,de_CH
+Cyprus,el_CY
+Greece,el_GR
+Israel,iw_IL
+India,hi_IN
+Hungary,hu_HU
+Iceland,is_IS
+Indonesia,in_ID
+Ireland,ga_IE
+Italy,it_IT
+Switzerland,it_CH
+Japan,ja_JP
+South Korea,ko_KR
+Latvia,lv_LV
+Lithuania,lt_LT
+Macedonia,mk_MK
+Malaysia,ms_MY
+Malta,mt_MT
+Norway,no_NO
+Poland,pl_PL
+Brazil,pt_BR
+Portugal,pt_PT
+Romania,ro_RO
+Russia,ru_RU
+Bosnia and Herzegovina,sr_BA
+Montenegro,sr_ME
+Serbia and Montenegro,sr_CS
+Serbia,sr_RS
+Slovakia,sk_SK
+Slovenia,sl_SI
+Argentina,es_AR
+Bolivia,es_BO
+Chile,es_CL
+Colombia,es_CO
+Costa Rica,es_CR
+Dominican Republic,es_DO
+Ecuador,es_EC
+El Salvador,es_SV
+Guatemala,es_GT
+Honduras,es_HN
+Mexico,es_MX
+Nicaragua,es_NI
+Panama,es_PA
+Paraguay,es_PY
+Peru,es_PE
+Puerto Rico,es_PR
+Spain,es_ES
+United States,es_US
+Uruguay,es_UY
+Venezuela,es_VE
+Sweden,sv_SE
+Thailand,th_TH
+Turkey,tr_TR
+Ukraine,uk_UA
+Vietnam,vi_VN
