@@ -26,18 +26,18 @@ countIDs <- function(col){
   sapply(col.1, length)
 }
 
-date.FromTimeStamp <- function(TimeStamp)
-{
-  resDate <- strsplit(TimeStamp,"T")  
-  resDate <- as.Date(resDate[[1]][1]) 
-}
+# date.FromTimeStamp <- function(TimeStamp)
+# {
+#   resDate <- strsplit(TimeStamp,"T")  
+#   resDate <- as.Date(resDate[[1]][1]) 
+# }
 
-hour.FromTimeStamp <- function(TimeStamp)
-{
-  resHour <- strsplit(TimeStamp,"T")
-  resHour <- strsplit(resHour[[1]][2],":")
-  resHour <- as.character(resHour[[1]][1]) 
-}
+# hour.FromTimeStamp <- function(TimeStamp)
+# {
+#   resHour <- strsplit(TimeStamp,"T")
+#   resHour <- strsplit(resHour[[1]][2],":")
+#   resHour <- as.character(resHour[[1]][1]) 
+# }
 countNAs <- function(int){
   sapply(int, function(int.1){
       sum(is.na(int.1))

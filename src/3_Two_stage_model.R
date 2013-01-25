@@ -7,7 +7,7 @@ load.project()
 
 train <- read.csv("data/train.csv")
 test <- read.csv("data/test.csv")
-users <- read.csv("data/users.csv", stringsAsFactors = FALSE)
+#users <- read.csv("data/users.csv", stringsAsFactors = FALSE)
 users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
 att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
 
@@ -31,7 +31,7 @@ friends.1 <- as.data.frame(do.call(rbind, friends))
 
 ### Take the subset for which we have information in the users table
 
-friends.2 <- friends.1[unique(friends.1[,2]) %in% users$user_id, ]
+friends.2 <- friends.1[friends.1[,2] %in% users$user_id, ]
 names(friends.2) <- c("original.user", "user_id")
 users$user_id <- factor(users$user_id)
 
@@ -53,13 +53,24 @@ att.no$int.num <- -1
 att.yes$int.num <- 2
 att.invited$int.num <- 0
 
-### Put together the pieces of the attendance file and join with the friends table
-### (which also contains the users table) 
+### Put together the pieces of the attendance file and join 
+### with the friends table (which also contains the users table) 
 
-att.1 <- rbind(att.maybe, att.no, att.yes, att.invited, att.invited)
-friends.4 <- join(att.1[att.1$user_id %in% friends.3$user_id, ],
- friends.3, type = "inner")
-friends.5 <- friends.4[!is.na(friends.4$locale), ]
+att.1 <- rbind(att.maybe, att.no, att.yes, att.invited)
+
+# =======================
+# = HERE LIES THE ISSUE =
+# =======================
+
+friends.4 <- join(att.1[att.1$user_id %in% friends.3$user_id &
+  att.1$event %in% train$event, ], friends.3)
+
+
+friends.5 <- friends.4[!is.na(friends.4$timezone), ]
+
+# ================
+# = HERE! I SAY! =
+# ================
 
 ### Join friends table with events table
 
@@ -68,7 +79,7 @@ events$user_id <- as.character(events$user_id)
 friends.5$user_id <- as.character(friends.5$user_id)
 events$event_id <- as.character(events$event_id)
 friends.5$event_id <- as.character(friends.5$event_id)
-
+events$user_id <- NULL
 fr.ev <- join(friends.5, events)
 
 # ====================
@@ -123,4 +134,18 @@ events.ids.all <- intersect(unique(att.1[att.1$user_id %in%
   intersect(friends.1$friend, users$user_id), 
   "event"]), train$event)
 
+# =========
+# = Model =
+# =========
+
+### There are users that appear more than once in the fr.ev table 
+### because they are friends with more than one user on the training set
+### Keep the user friend table, and collapse so there are unique user_id's in 
+### this table
+
+ref.table <- unique(fr.ev[,c("user_id", "original.user")])
+
+fr.ev.red <- fr.ev
+fr.ev.red$original.user <- NULL
+fr.ev.red <- unique(fr.ev.red)
 
