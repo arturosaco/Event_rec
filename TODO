@@ -7,7 +7,7 @@ TODO
 -Manage time data 
 -Cluster users and cluster events,  with probabilities.
 
-Features
+*Features
 -obtain the country for users and events. (Vlasto)
 -for each user, number of friends that said yes, maybe, invited, no
 -for each event, ratio of the users friends that went to the event
@@ -15,6 +15,11 @@ Features
   -#no. of events user attended last month
   -how many events does he go each month
 
-Issues
+*Issues
 -58 users don't have time data in variable joinedAt
 -17 repeated id's in event files (17 in the subset of the events present at attendance, train and test files)
+
+
+*Questions
+-What does it mean that the combination (event E, user U) appear in the training set,
+or in the test set? shouldn't all those combination appear? how are the combinations that do appear selected? I think understanding that process might be relevant to understand the problem.
