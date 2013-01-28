@@ -170,4 +170,4 @@ sum(!is.na(users_preprocessed$city) & is.na(users_preprocessed$country))
 sum(is.na(users_preprocessed$city) | is.na(users_preprocessed$country))
 
 
-save("users_preprocessed",file="users_preprocessed.RData")
+cache("users_preprocessed")
