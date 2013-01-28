@@ -20,6 +20,12 @@ melt.ish <- function(data.int){
   names(out) <- c("event", "user_id")
   out
 }
+melt.ish.1 <- function(data.int){
+  l.aux <- strsplit(data.int[, 2], " ")
+  out <- data.frame(rep(data.int[, 1], sapply(l.aux, length)), unlist(l.aux))
+  names(out) <- c("event", "user_id")
+  out
+}
 
 countIDs <- function(col){
   col.1 <- strsplit(col, " ")

@@ -5,16 +5,11 @@ load.project()
 # = Read data =
 # =============
 
-train <- read.csv("data/train.csv")
-test <- read.csv("data/test.csv")
-#users <- read.csv("data/users.csv", stringsAsFactors = FALSE)
+# train <- read.csv("data/train.csv")
+# test <- read.csv("data/test.csv")
+# users <- read.csv("data/users.csv", stringsAsFactors = FALSE)
 users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
 att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
-
-### Take a subset of the friends table that only includes the users in the 
-### train file
-
-users.friends.sub <- users.friends[users.friends$user %in% train$user, ]
 
 # ========================
 # = Process friends file =
@@ -22,65 +17,57 @@ users.friends.sub <- users.friends[users.friends$user %in% train$user, ]
 
 ### Un-list friends file and get a data.frame with the info
 
-friends <- lapply(1:nrow(users.friends.sub), function(row.int){
-    friend.int <- strsplit(users.friends.sub[row.int, 2], " ")[[1]]
-    cbind(user = users.friends.sub[row.int, 1],
-     friend = friend.int)
-  })
-friends.1 <- as.data.frame(do.call(rbind, friends))
+
+# system.time({friends.1 <- melt.ish.1(users.friends)})
+# names(friends.1) <- c("original.user", "user_id")
+# cache("friends.1")
+
 
 ### Take the subset for which we have information in the users table
+### this is a SMALL subset, less than 1% of friends have info in the users table
 
-friends.2 <- friends.1[friends.1[,2] %in% users$user_id, ]
-names(friends.2) <- c("original.user", "user_id")
-users$user_id <- factor(users$user_id)
+# friends.2 <- friends.1[friends.1$user_id %in% users_preprocessed$user_id, ]
+# cache("friends.2")
+
+users_preprocessed$user_id <- factor(users_preprocessed$user_id)
 
 ### Join with the users table
 
-friends.3 <- join(friends.2, users)
+# friends.3 <-  users_preprocessed[users_preprocessed$user_id %in% 
+#   friends.2$user_id, ]
+# cache("friends.3")
 
 ### Un-list the attendance file
 
-att.yes <- melt.ish(att[, c("event", "yes")])
-att.no <- melt.ish(att[, c("event", "no")])
-att.maybe <- melt.ish(att[, c("event", "maybe")])
-att.invited <- melt.ish(att[, c("event", "invited")])
+# att.yes <- melt.ish.1(att[, c("event", "yes")])
+# att.no <- melt.ish.1(att[, c("event", "no")])
+# att.maybe <- melt.ish.1(att[, c("event", "maybe")])
+# att.invited <- melt.ish.1(att[, c("event", "invited")])
 
 ### Construct the numeric interest variable 
 
-att.maybe$int.num <- 1
-att.no$int.num <- -1
-att.yes$int.num <- 2
-att.invited$int.num <- 0
+# att.maybe$int.num <- 1
+# att.no$int.num <- -1
+# att.yes$int.num <- 2
+# att.invited$int.num <- 0
 
 ### Put together the pieces of the attendance file and join 
 ### with the friends table (which also contains the users table) 
 
-att.1 <- rbind(att.maybe, att.no, att.yes, att.invited)
+# att.1 <- rbind(att.maybe, att.no, att.yes, att.invited)
+# cache("att.1")
 
-# =======================
-# = HERE LIES THE ISSUE =
-# =======================
-
-friends.4 <- join(att.1[att.1$user_id %in% friends.3$user_id &
-  att.1$event %in% train$event, ], friends.3)
-
-
-friends.5 <- friends.4[!is.na(friends.4$timezone), ]
-
-# ================
-# = HERE! I SAY! =
-# ================
+friends.4 <- join(att.1[att.1$user_id %in% friends.3$user_id, ], friends.3)
 
 ### Join friends table with events table
 
-names(friends.5)[1] <- "event_id"
-events$user_id <- as.character(events$user_id)
-friends.5$user_id <- as.character(friends.5$user_id)
+names(friends.4)[1] <- "event_id"
+friends.4$user_id <- as.character(friends.4$user_id)
 events$event_id <- as.character(events$event_id)
-friends.5$event_id <- as.character(friends.5$event_id)
+friends.4$event_id <- as.character(friends.4$event_id)
 events$user_id <- NULL
-fr.ev <- join(friends.5, events)
+events$country <- NULL
+fr.ev <- join(friends.4, events, by = "event_id")
 
 # ====================
 # = Set verification =
@@ -138,14 +125,37 @@ events.ids.all <- intersect(unique(att.1[att.1$user_id %in%
 # = Model =
 # =========
 
-### There are users that appear more than once in the fr.ev table 
-### because they are friends with more than one user on the training set
-### Keep the user friend table, and collapse so there are unique user_id's in 
-### this table
+fr.ev$birthyear <- as.numeric(as.character(fr.ev$birthyear))
+fr.ev$timezone <- factor(fr.ev$timezone)
 
-ref.table <- unique(fr.ev[,c("user_id", "original.user")])
+fr.ev$lat <- as.character(fr.ev$lat)
+fr.ev$lng <- as.character(fr.ev$lng)
 
-fr.ev.red <- fr.ev
-fr.ev.red$original.user <- NULL
-fr.ev.red <- unique(fr.ev.red)
+fr.ev[fr.ev$lng == "", "lng"] <- NA
+#  paste("NA_", 1:sum(fr.ev$lng == ""), sep = "")
+fr.ev[fr.ev$lat == "", "lat"] <- NA
+#  paste("NA_", 1:sum(fr.ev$lat == ""), sep = "")
+
+fr.ev$lat <- scale(as.numeric(fr.ev$lat))
+fr.ev$lng <- scale(as.numeric(fr.ev$lng))
+
+fr.ev.1 <- fr.ev[!is.na(fr.ev$birthyear) & !is.na(fr.ev$lat), ]
+
+formu <- as.formula(paste("int.num ~ timezone + birthyear + gender + c_other+
+ lat + lng + ", 
+  paste("c_", 1:100, sep = "", collapse = "+")))
+X <- model.matrix(formu, data = fr.ev.1)
+
+mod.cv <- cv.glmnet(x = X, y = fr.ev.1$int.num, family = "gaussian",
+  nfolds = 10)
+
+mod <- glmnet(x = X, y = fr.ev.1$int.num, family = "gaussian", 
+  lambda = mod.cv$lambda.min)
+mod.1 <- lm(formu, data = fr.ev.1)
+
+# ========
+# = TODO =
+# ========
+
+# - group the birthyear in groups of 5 and add a missning class, treat as factor
 
