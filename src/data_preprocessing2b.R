@@ -166,81 +166,27 @@ unique(events[index.not.match, "city"][is.na(matches)])
 matches <- match(events$city[!is.na(events$city) & is.na(events$country)], 
   city_dict$City)
 sum(!is.na(matches))
-users$country[!is.na(users$city) & is.na(users$country)] <- city_dict$Country[matches]
+### Manual fixes
+replacment <- city_dict$Country[matches]
+replacment[1] <- "Canada"
+replacment[7] <- "Italy"
+replacment[9] <- "Canada"
+events$country[!is.na(events$city) & is.na(events$country)] <- city_dict$Country[matches]
 
 
-
-
-# ==========================
-# = Your Comment Goes here =
-# ==========================
-
-
-# # Some initial function tests on different messy strings
-# 
-# 
-# extractCountry2("Djoka Yogyakarta",world_states,US_states,CA_states)
-# extractCountry2("Buenos Aires Brazil",world_states,US_states,CA_states)
-# extractCountry2("Toronto Ontario",world_states,US_states,CA_states)
-# extractCountry2("Los Angeles California",world_states,US_states,CA_states)
-# extractCountry2("Los Angeles 82",world_states,US_states,CA_states)
-# extractCountry2("Yogyakarta",world_states,US_states,CA_states)
-# extractCountry2("Phnom Penh Phnum Penh",world_states,US_states,CA_states)
-
-# extract Country
-extractedCountryInfo <- extractCountry2(users$location,world_states,US_states,CA_states)
-remaining_string <- extractedCountryInfo[,1]
-remaining_string <- gsub(" *$","",remaining_string)
-
-
-#check how many remaining strings do not match a city from the dictionary
-valid.cities <- (remaining_string %in% cities_list)
-tail(users[!valid.cities,],100)
-
-users$unmatched_string <- rep(NA, length(remaining_string))
-users$city <- rep(NA, length(remaining_string))
-users$unmatched_string[!valid.cities] <- remaining_string[!valid.cities]
-users$city[valid.cities] <- remaining_string[valid.cities]
-users$region <- extractedCountryInfo[,2]
-users$country <- extractedCountryInfo[,3]
-
-# tests of pmatch
-# pmatch(c("med","davos"), c("mean", "median", "mode davos","medi"),duplicates.ok=T) # returns 2
-# pmatch(c("Invalid", "Los Angeles", "Los Angeles"), c("Los Angeles", "Los Alamos"), dup=TRUE)
-
-#pmatch matches the each city against the BEGINNING of each element in the vector
-matches <- pmatch(users$unmatched_string[!is.na(users$unmatched_string)],cities_list, dup = T)
-sum(!is.na(matches))
-mcity <- rep(NA, length(remaining_string))
-mcity[!is.na(users$unmatched_string)] <- cities_list[matches]
-
-#from valid cities infer the missing country using city_dict
-# Possible TODO (not straightforward since many cities belong to multiple countries)
-# for this data set the number of such cases is zero see below
-
-# where city present and country missing get country from city (if unique)
-matches <- match(users$city[!is.na(users$city) & is.na(users$country)], city_dict$City)
-sum(!is.na(matches))
-users$country[!is.na(users$city) & is.na(users$country)] <- city_dict$Country[matches]
-
-
-
-
-# attach Geo data for users with a valid city and country entry
 colstokeep <- c(5,6,7,16,17)
-geoinfo <- matrix(NA,ncol=length(colstokeep),nrow=nrow(users))
+geoinfo <- matrix(NA,ncol=length(colstokeep),nrow=nrow(events))
 geoinfo <- as.data.frame(geoinfo)
 colnames(geoinfo) <- colnames(city_dict)[colstokeep]
-present_entries <- (users$city %in% city_dict$City & 
-                    users$country %in% city_dict$Country)
-matches <- match(users$city[present_entries],city_dict$City)
+present_entries <- (events$city %in% city_dict$City & 
+                    events$country %in% city_dict$Country)
+matches <- match(events$city[present_entries],city_dict$City)
 geoinfo[present_entries,] <- city_dict[matches,colstokeep]
 
-users_preprocessed <- cbind(users,geoinfo)
-print("Some results:")
-sum(is.na(users_preprocessed$city) & !is.na(users_preprocessed$country))
-sum(!is.na(users_preprocessed$city) & is.na(users_preprocessed$country))
-sum(is.na(users_preprocessed$city) | is.na(users_preprocessed$country))
+events_preprocessed <- cbind(events,geoinfo)
 
 
-save("users_preprocessed",file="users_preprocessed.RData")
+## BEWARE!
+## Haven't checked compatibilty with preprocessing script number 3!
+
+### save("events_preprocessed",file="events_preprocessed.RData")
