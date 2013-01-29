@@ -53,4 +53,4 @@ for (i in 1:nrow(users_preprocessed))
 users_latitude <- users_preprocessed$Latitude
 users_longitude <- users_preprocessed$Longitude
 
-save(users_latitude, users_longitude, "data/users_coordinates.Rdata")
+save(users_latitude, users_longitude, file="data/users_coordinates.Rdata")
