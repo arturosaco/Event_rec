@@ -1,6 +1,6 @@
 ################################################################
 # Purpose: Parse the strip the event file to relevant events, store
-# all files as R objects for futur preprocessing
+# all files as R objects for future preprocessing
 ################################################################
 
 
@@ -16,7 +16,7 @@ library(stringr)
 
 att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
 events.aux <- read.csv("data/events.csv", stringsAsFactors = FALSE, 
-  nrows = 100)
+  nrows = 10)
 names.aux <- names(events.aux)
 
 ### Read the events csv sequentially and filter out those events that are NOT
@@ -55,4 +55,5 @@ users <- read.csv("data/users.csv", stringsAsFactors = FALSE)
 users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
 event.attendees <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
 
-save("train","test","users","users.friends","event.attendees","events",file="loadedData.Rdata")
+save("train","test","users","users.friends","event.attendees","events",
+  file="loadedData.Rdata")

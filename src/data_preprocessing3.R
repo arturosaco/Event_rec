@@ -127,7 +127,7 @@ colnames(train)[2] <- "event_id"
 
 train$event_id <- as.factor(train$event_id)
 train$user_id <- as.factor(train$user_id)
-train$invited <- as.logical(train$user_id)
+train$invited <- as.logical(train$invited)
 
 colnames(train)[4] <- "event_seen_time"
 train$event_seen_time <- as.Date(train$event_seen_time)
@@ -147,7 +147,7 @@ train[train$interested == 0 &
 interested.num_train <- train$interested.num
 train$interested.num <- as.factor(train$interested.num)
 # personally I strongly opt for discarding the original interest values
-train <- train[,-c(5,6)]
+train <- train[,!names(train) %in% c("interested", "not_interested")]
 
 # once the recoding is done, uncomment:
 #save("train","test","users","users.friends","event.attendees","events",file="codedData.Rdata")

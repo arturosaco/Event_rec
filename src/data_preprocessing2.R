@@ -107,6 +107,8 @@ colnames(locale_vocab) <- c("Country","Locale")
 
 # initial recoding and NA replacement
 
+load(file = "data/loadedData.Rdata")
+
 #replace strings of whitespaces, or emtpy strings with NA
 users$locale <- replaceEmpty(users$locale)
 users$location <- replaceEmpty(users$location)
@@ -183,4 +185,4 @@ sum(!is.na(users_preprocessed$city) & is.na(users_preprocessed$country))
 sum(is.na(users_preprocessed$city) | is.na(users_preprocessed$country))
 
 
-save("users_preprocessed",file="users_preprocessed.RData")
+save("users_preprocessed", file="data/users_preprocessed.RData")
