@@ -1,3 +1,6 @@
+# Script that fills the empty values for the latitude and longitude
+# in the frame users_preprocessed using data from OpenStreetMaps
+
 library(RJSONIO)
 
 is.empty <-
@@ -5,22 +8,18 @@ function(x)
   # Empty if NA, empty string or string with only spaces
   is.na(x) || x=="" || prod(unlist(strsplit(x," ")) == "")
 
-getCoordinates <- 
-function(city, country)
+getCoordinatesfromLoc <- 
+function(location)
 {
-  if ( is.empty(city) && is.empty(country) ) 
+  if ( is.empty(location) ) 
     c(NA,NA)
   else
   {
-    city <- gsub(' ','%20',city)
-    country <- gsub(' ','%20',country)
-    print(city)
-    print(country)
+  	print(location)
+    location <- gsub(' ','%20',location)
     url <- paste(
-      "http://nominatim.openstreetmap.org/search?city="
-      , city
-      , "&contry="
-      , country
+      "http://nominatim.openstreetmap.org/search?q="
+      , location
       , "&limit=9&format=json"
       , sep="")
     x <- fromJSON(url)
@@ -31,5 +30,27 @@ function(city, country)
   }
 }
 
-events <- read.csv("../data/events.csv",nrows=100)
-apply(events,1,function(x)getCoordinates(x[4],x[7]))
+load("data/users_preprocessed.Rdata")
+
+# Using Google Maps
+#library(taRifx.geo)
+#coords <- apply(users,1,function(x)gGeoCode(x[6],verbose=TRUE,floodControl=TRUE))
+
+# Using OpenStreeMaps
+found <- 0
+for (i in 1:nrow(users_preprocessed))
+{
+	if ( is.na(users_preprocessed[i,]$Latitude) &&
+	     !is.empty(users_preprocessed[i,]$location) )
+	{
+		coords = getCoordinatesfromLoc(users_preprocessed[i,]$location)
+		users_preprocessed[i,]$Latitude <- coords[1]
+		users_preprocessed[i,]$Longitude <- coords[2]
+		found <- found + 1
+	}
+}
+
+users_latitude <- users_preprocessed$Latitude
+users_longitude <- users_preprocessed$Longitude
+
+save(users_latitude, users_longitude, "data/users_coordinates.Rdata")
