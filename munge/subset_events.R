@@ -13,14 +13,7 @@ test <- read.csv("data/test.csv")
 ev.ids <- union(union(att$event, train$event), test$event)
 rm(att, train, test)
 gc()
-putNAs <- function(var){
-    var <- as.character(var)
-    var[var == ""] <- NA
-    var
-  }
-# for(int in c("country", "city", "state", "zip")){
-#   out[, int] <- putNAs(out[, int])
-# }  
+
 file <- "data/events.csv"
 
 f <- file(file,'r')
@@ -36,5 +29,9 @@ close(f)
 for(int in c(grep("c_", names(out), value = TRUE))){
   out[, int] <- as.numeric(out[, int])
 }
+for(int in c("city", "state", "zip", "country", "lat", "lng")){
+  events[, int] <- putNAs(events[, int])
+}
+events$start_time <- read.date(events$start_time)
 events <- out
 

@@ -8,24 +8,19 @@ read.date <- function(date){
     format =  c(dates = "y-m-d", times = "h:m:s"))
   time
 }
+
 melt.ish <- function(data.int){
-  l.aux <- strsplit(data.int[, 2], " ")
-  l.aux <- lapply(1:length(l.aux), function(int){
-      if(length(l.aux[[int]]) > 0)
-        cbind(data.int[int, 1], l.aux[[int]])
-      else
-        NULL
-    })
-  out <- data.frame(do.call(rbind, l.aux))
-  names(out) <- c("event", "user_id")
-  out
-}
-melt.ish.1 <- function(data.int){
   l.aux <- strsplit(data.int[, 2], " ")
   out <- data.frame(rep(data.int[, 1], sapply(l.aux, length)), unlist(l.aux))
   names(out) <- c("event", "user_id")
   out
 }
+putNAs <- function(var){
+    var <- as.character(var)
+    var[var == ""] <- NA
+    var
+  }
+
 
 countIDs <- function(col){
   col.1 <- strsplit(col, " ")
