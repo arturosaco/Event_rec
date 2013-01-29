@@ -16,6 +16,10 @@ function(user,event,index) sum(sapply(user$friends,function(x)is.element(x,event
 # Loading CSVs
 friends <- read.csv("../data/user_friends.csv", stringsAsFactors = FALSE);
 att <- read.csv("../data/event_attendees.csv", stringsAsFactors = FALSE);
+train <- read.csv("../data/train.csv", stringsAsFactors = FALSE);
+
+events <- intersect(att$event,train$event);
+users <- intersect(friends$user,train$user);
 
 # Splitting fields with values separated with spaces
 friends$friends <- split_field(friends$friends);

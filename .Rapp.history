@@ -1,0 +1,1035 @@
+help ln
+help lm
+help(lm)
+help(I)
+help(lsq)
+help(lqs)
+createwgn(10,1,5)
+rnorm(100)
+help(rnorm)
+x<-rnorm(100)
+acf(x)
+x<-rnorm(10000)
+acf(x)
+help(mclustVariance)
+help(mclustModels)
+help(em)
+help(mclustModelNames)
+help(mclustVariance)
+help(mclustModelNames)
+help(diag)
+as.Date("2013-10-22T06:00:00.002Z")
+date<-as.Date("2013-10-22T06:00:00.002Z")
+format(date, "%A, %b %d, %Y")
+format(date, "%h")
+format(date, "%hh")
+format(date, "%H")
+format(date, "%HH")
+format(date, "%m")
+format(date, "%M")
+strsplit("2013-10-22T06:00:00.002Z", "TZ")
+strsplit("2013-10-22T06:00:00.002Z", "T")
+str<-strsplit("2013-10-22T06:00:00.002Z", "T")
+as.Date(str[1])
+str[1]
+str[1][1]
+str[[1]]
+str<-strsplit("2013-10-22T06:00:00.002Z", "T")[[1]]
+str
+str[1]
+as.Date(str[1])
+date<-as.Date(str[1])
+hour<-strsplit(str[2], "T")[[1]][1]
+date
+hour
+hour<-strsplit(str[2], ":")[[1]][1]
+hour
+date
+format(date,"%m")
+format(date,"%M")
+hour
+expand.grid(c(1,2),c(1,2))
+e
+rep(1,2)
+rep(1,3)
+rep(c(1,2),3)
+rep(list(1,2),3)
+library(reshape2)#
+library(plyr)#
+#library(ggplot2)#
+library(stringr)#
+library(lubridate)#
+library(data.table)#
+library(glmnet)#
+library(chron)#
+library(stringr)
+setwd("/Users/sergio/Documents/kaggle/")
+users <- read.csv("data/users.csv",header=TRUE)
+setwd("git/")
+replaceEmpty <- function(char.vec)#
+{#
+  if (!is.character(char.vec)) {char.vec <- as.character(char.vec)}#
+  char.vec[grep("^\\s*$", char.vec)] <- NA#
+  return(char.vec)#
+}#
+#
+extractCountry2 <- function(string,world_states,US_states,CA_states)#
+{#
+  state <- rep(NA, length(string))#
+  region <- state#
+  unmatched_string <- state#
+  abrev <-  c(US_states$Abrev,CA_states$Abrev)#
+  state <- str_match(string,paste(c(world_states$Country),collapse="|"))#
+  #get rid of world countries from string, otherwise Tbilisi is in US#
+  string <- gsub(paste(c(world_states$Country),collapse="|"),"",string)#
+  matches <- str_match(string,paste(c(US_states$Country,US_states$Abrev),collapse="|"))#
+  region[!is.na(matches)] <- matches[!is.na(matches)]#
+  state[!is.na(matches)] <- "United States"#
+  matches <- str_match(string,paste(c(CA_states$Country,CA_states$Abrev),collapse="|"))#
+  region[!is.na(matches)] <- matches[!is.na(matches)]#
+  state[!is.na(matches)] <- "Canada"#
+  region <- recode(region,c(US_states$Abrev,CA_states$Abrev),c(US_states$Country,CA_states$Country))#
+  unmatched_string <- gsub(paste(c(world_states$Country,US_states$Country,CA_states$Country,abrev),collapse="|"),"",string)#
+  unmatched_string <- gsub(" *$","",unmatched_string)#
+  # fix 'special' candidates  #
+  matches <- str_match(string,paste(c("Yogyakarta","Jogjakarta"),collapse="|"))#
+  unmatched_string[!is.na(matches)] <- "Yogyakarta"#
+  state[!is.na(matches)] <- "Indonesia"#
+  matches <- str_match(string,paste(c("Phnom Penh","Phnum Penh"),collapse="|"))#
+  unmatched_string[!is.na(matches)] <- "Phnom Penh"#
+  state[!is.na(matches)] <- "Cambodia"#
+  return(cbind(unmatched_string, region, state))#
+}
+country_dict <- read.csv("data/Geodict/Countries.txt", stringsAsFactors = FALSE)#
+city_dict <- read.csv("data/Geodict/cities.txt", stringsAsFactors = FALSE)#
+country_dict <- country_dict[match(city_dict$CountryID,country_dict$CountryId),-c(1,15,16)]#
+city_dict <- cbind(city_dict,country_dict)#
+#remove multiple instances of a city (some cities have a lot of entries)#
+city_dict <- cbind(city_dict,country_dict)#
+city_dict <- city_dict[!duplicated(cbind(city_dict$City,city_dict$Country)),]#
+cities_list <- unique(city_dict$City)
+locale_vocab <- read.csv("data/Geodict/locale_list.txt")#
+world_states <- read.csv("data/Geodict/world_states.csv", stringsAsFactors = FALSE,header=F)#
+US_states <- read.csv("data/Geodict/US_states.csv", stringsAsFactors = FALSE,header=F)#
+CA_states <- read.csv("data/Geodict/CA_states.csv", stringsAsFactors = FALSE,header=F)#
+colnames(world_states) <- c("Country","Capital")#
+colnames(US_states) <- c("Country","Capital","Abrev")#
+colnames(CA_states) <- c("Country","Capital","Abrev")#
+colnames(locale_vocab) <- c("Country","Locale")
+load(file = "data/loadedData.Rdata")#
+#
+#replace strings of whitespaces, or emtpy strings with NA#
+users$locale <- replaceEmpty(users$locale)#
+users$location <- replaceEmpty(users$location)#
+#replace invalid locale data "id_ID" with NA#
+users$locale[!(users$locale %in% locale_vocab$Locale)] <- NA#
+users$location <- gsub("[0-9]","",users$location)#
+users$joinedAt <- as.Date(users$joinedAt)
+extractedCountryInfo <- extractCountry2(users$location,world_states,US_states,CA_states)#
+remaining_string <- extractedCountryInfo[,1]#
+remaining_string <- gsub(" *$","",remaining_string)
+load(file = "data/loadedData.Rdata")
+Purpose: Parse the strip the event file to relevant events, store#
+# all files as R objects for future preprocessing#
+#################################################################
+library(reshape2)#
+library(plyr)#
+library(ggplot2)#
+library(stringr)#
+library(lubridate)#
+library(data.table)#
+library(glmnet)#
+library(chron)#
+library(stringr)#
+#
+att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)#
+events.aux <- read.csv("data/events.csv", stringsAsFactors = FALSE, #
+  nrows = 10)#
+names.aux <- names(events.aux)#
+#
+### Read the events csv sequentially and filter out those events that are NOT#
+### in the attendance file #
+#
+train <- read.csv("data/train.csv")#
+test <- read.csv("data/test.csv")#
+#
+ev.ids <- union(union(att$event, train$event), test$event)#
+rm(att, train, test)#
+gc()#
+#
+system.time({#
+  file <- "data/events.csv"#
+#
+  f <- file(file,'r')#
+  invisible(readLines(f, n = 1))#
+  ev.temp <- readLines(f)#
+  ev.id.temp <- gsub(',.*', "", ev.temp)#
+  out <- ev.temp[ev.id.temp %in% ev.ids]#
+  out <- strsplit(out, ",")#
+  out <- do.call(c, out)#
+  out <- as.data.frame(matrix(out, nrow = length(out) / length(names.aux), #
+    ncol = length(names.aux), byrow = TRUE, dimnames = list(NULL, names.aux)))#
+  close(f)#
+  for(int in grep("c_", names(out), value = TRUE)){#
+    out[, int] <- as.numeric(out[, int])#
+  }#
+#
+  events <- out#
+})#
+#
+train <- read.csv("data/train.csv")#
+test <- read.csv("data/test.csv")#
+users <- read.csv("data/users.csv", stringsAsFactors = FALSE)#
+users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)#
+event.attendees <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)#
+#
+save("train","test","users","users.friends","event.attendees","events",#
+  file="loadedData.Rdata")
+library(reshape2)#
+library(plyr)#
+#library(ggplot2)#
+library(stringr)#
+library(lubridate)#
+library(data.table)#
+library(glmnet)#
+library(chron)#
+library(stringr)#
+#
+att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)#
+events.aux <- read.csv("data/events.csv", stringsAsFactors = FALSE, #
+  nrows = 10)#
+names.aux <- names(events.aux)
+library(reshape2)#
+library(plyr)#
+#library(ggplot2)#
+library(stringr)#
+library(lubridate)#
+library(data.table)#
+library(glmnet)#
+library(chron)#
+library(stringr)#
+#
+att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)#
+events.aux <- read.csv("data/events.csv", stringsAsFactors = FALSE, #
+  nrows = 10)#
+names.aux <- names(events.aux)
+train <- read.csv("data/train.csv")#
+test <- read.csv("data/test.csv")#
+#
+ev.ids <- union(union(att$event, train$event), test$event)#
+rm(att, train, test)#
+gc()
+system.time({#
+  file <- "data/events.csv"#
+#
+  f <- file(file,'r')#
+  invisible(readLines(f, n = 1))#
+  ev.temp <- readLines(f)#
+  ev.id.temp <- gsub(',.*', "", ev.temp)#
+  out <- ev.temp[ev.id.temp %in% ev.ids]#
+  out <- strsplit(out, ",")#
+  out <- do.call(c, out)#
+  out <- as.data.frame(matrix(out, nrow = length(out) / length(names.aux), #
+    ncol = length(names.aux), byrow = TRUE, dimnames = list(NULL, names.aux)))#
+  close(f)#
+  for(int in grep("c_", names(out), value = TRUE)){#
+    out[, int] <- as.numeric(out[, int])#
+  }#
+#
+  events <- out#
+})#
+#
+train <- read.csv("data/train.csv")#
+test <- read.csv("data/test.csv")#
+users <- read.csv("data/users.csv", stringsAsFactors = FALSE)#
+users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)#
+event.attendees <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)#
+#
+save("train","test","users","users.friends","event.attendees","events",#
+  file="loadedData.Rdata")
+Purpose: Extract geodata out of the users file#
+#################################################################
+#
+library(reshape2)#
+library(plyr)#
+#library(ggplot2)#
+library(stringr)#
+library(lubridate)#
+library(data.table)#
+library(glmnet)#
+library(chron)#
+library(stringr)#
+# =============#
+# = Functions =#
+# =============#
+recode <- function(x,reflistFrom, reflistTo){#
+  inlist <- (x %in% reflistFrom)#
+  elemind <- match(x,reflistFrom)#
+  replvec <- reflistTo[elemind]#
+  x[inlist] <- replvec[inlist]#
+  return(x)#
+}#
+#
+replaceEmpty <- function(char.vec)#
+{#
+  if (!is.character(char.vec)) {char.vec <- as.character(char.vec)}#
+  char.vec[grep("^\\s*$", char.vec)] <- NA#
+  return(char.vec)#
+}#
+#
+extractCountry2 <- function(string,world_states,US_states,CA_states)#
+{#
+  state <- rep(NA, length(string))#
+  region <- state#
+  unmatched_string <- state#
+  abrev <-  c(US_states$Abrev,CA_states$Abrev)#
+  state <- str_match(string,paste(c(world_states$Country),collapse="|"))#
+  #get rid of world countries from string, otherwise Tbilisi is in US#
+  string <- gsub(paste(c(world_states$Country),collapse="|"),"",string)#
+  matches <- str_match(string,paste(c(US_states$Country,US_states$Abrev),collapse="|"))#
+  region[!is.na(matches)] <- matches[!is.na(matches)]#
+  state[!is.na(matches)] <- "United States"#
+  matches <- str_match(string,paste(c(CA_states$Country,CA_states$Abrev),collapse="|"))#
+  region[!is.na(matches)] <- matches[!is.na(matches)]#
+  state[!is.na(matches)] <- "Canada"#
+  region <- recode(region,c(US_states$Abrev,CA_states$Abrev),c(US_states$Country,CA_states$Country))#
+  unmatched_string <- gsub(paste(c(world_states$Country,US_states$Country,CA_states$Country,abrev),collapse="|"),"",string)#
+  unmatched_string <- gsub(" *$","",unmatched_string)#
+  # fix 'special' candidates  #
+  matches <- str_match(string,paste(c("Yogyakarta","Jogjakarta"),collapse="|"))#
+  unmatched_string[!is.na(matches)] <- "Yogyakarta"#
+  state[!is.na(matches)] <- "Indonesia"#
+  matches <- str_match(string,paste(c("Phnom Penh","Phnum Penh"),collapse="|"))#
+  unmatched_string[!is.na(matches)] <- "Phnom Penh"#
+  state[!is.na(matches)] <- "Cambodia"#
+  return(cbind(unmatched_string, region, state))#
+}#
+# ======================#
+# = Data Preprocessing =#
+# ======================#
+#
+# Logic: (prefer exact string matching to Levenshtein distance matching)#
+#
+# 1. Split strings to known country and 'remaining string'#
+# 2a.Check if remaining string is present in the list of cities#
+# 2b. Check if a city from list of cities matches the beginning of remaining string (only 68 cases presently)#
+# 3. Try to infer missing country from city if city is present and known (only )#
+# 4. final step: attach Geo info for each user from known City and Country#
+#
+# Don't use locale for guessing location because it produces bad results#
+#
+# load and prepare dictionaries#
+# for the cities:#
+# downloaded from http://www.geobytes.com/GeoWorldMap.zip#
+#
+country_dict <- read.csv("data/Geodict/Countries.txt", stringsAsFactors = FALSE)#
+city_dict <- read.csv("data/Geodict/cities.txt", stringsAsFactors = FALSE)#
+country_dict <- country_dict[match(city_dict$CountryID,country_dict$CountryId),-c(1,15,16)]#
+city_dict <- cbind(city_dict,country_dict)#
+#remove multiple instances of a city (some cities have a lot of entries)#
+city_dict <- cbind(city_dict,country_dict)#
+city_dict <- city_dict[!duplicated(cbind(city_dict$City,city_dict$Country)),]#
+cities_list <- unique(city_dict$City)#
+#
+# for the countries:#
+# copied from Wiki lists#
+locale_vocab <- read.csv("data/Geodict/locale_list.txt")#
+world_states <- read.csv("data/Geodict/world_states.csv", stringsAsFactors = FALSE,header=F)#
+US_states <- read.csv("data/Geodict/US_states.csv", stringsAsFactors = FALSE,header=F)#
+CA_states <- read.csv("data/Geodict/CA_states.csv", stringsAsFactors = FALSE,header=F)#
+colnames(world_states) <- c("Country","Capital")#
+colnames(US_states) <- c("Country","Capital","Abrev")#
+colnames(CA_states) <- c("Country","Capital","Abrev")#
+colnames(locale_vocab) <- c("Country","Locale")#
+#
+# initial recoding and NA replacement#
+#
+load(file = "data/loadedData.Rdata")#
+#
+#replace strings of whitespaces, or emtpy strings with NA#
+users$locale <- replaceEmpty(users$locale)#
+users$location <- replaceEmpty(users$location)#
+#replace invalid locale data "id_ID" with NA#
+users$locale[!(users$locale %in% locale_vocab$Locale)] <- NA#
+users$location <- gsub("[0-9]","",users$location)#
+users$joinedAt <- as.Date(users$joinedAt)#
+# # Some initial function tests on different messy strings#
+# #
+# #
+# extractCountry2("Djoka Yogyakarta",world_states,US_states,CA_states)#
+# extractCountry2("Buenos Aires Brazil",world_states,US_states,CA_states)#
+# extractCountry2("Toronto Ontario",world_states,US_states,CA_states)#
+# extractCountry2("Los Angeles California",world_states,US_states,CA_states)#
+# extractCountry2("Los Angeles 82",world_states,US_states,CA_states)#
+# extractCountry2("Yogyakarta",world_states,US_states,CA_states)#
+# extractCountry2("Phnom Penh Phnum Penh",world_states,US_states,CA_states)#
+#
+# extract Country#
+extractedCountryInfo <- extractCountry2(users$location,world_states,US_states,CA_states)#
+remaining_string <- extractedCountryInfo[,1]#
+remaining_string <- gsub(" *$","",remaining_string)#
+#check how many remaining strings do not match a city from the dictionary#
+valid.cities <- (remaining_string %in% cities_list)#
+tail(users[!valid.cities,],100)#
+#
+users$unmatched_string <- rep(NA, length(remaining_string))#
+users$city <- rep(NA, length(remaining_string))#
+users$unmatched_string[!valid.cities] <- remaining_string[!valid.cities]#
+users$city[valid.cities] <- remaining_string[valid.cities]#
+users$region <- extractedCountryInfo[,2]#
+users$country <- extractedCountryInfo[,3]#
+#
+# tests of pmatch#
+# pmatch(c("med","davos"), c("mean", "median", "mode davos","medi"),duplicates.ok=T) # returns 2#
+# pmatch(c("Invalid", "Los Angeles", "Los Angeles"), c("Los Angeles", "Los Alamos"), dup=TRUE)#
+#
+#pmatch matches the each city against the BEGINNING of each element in the vector#
+matches <- pmatch(users$unmatched_string[!is.na(users$unmatched_string)],cities_list, dup = T)#
+sum(!is.na(matches))#
+mcity <- rep(NA, length(remaining_string))#
+mcity[!is.na(users$unmatched_string)] <- cities_list[matches]#
+#
+#from valid cities infer the missing country using city_dict#
+# Possible TODO (not straightforward since many cities belong to multiple countries)#
+# for this data set the number of such cases is zero see below#
+#
+# where city present and country missing get country from city (if unique)#
+matches <- match(users$city[!is.na(users$city) & is.na(users$country)], city_dict$City)#
+sum(!is.na(matches))#
+users$country[!is.na(users$city) & is.na(users$country)] <- city_dict$Country[matches]#
+# attach Geo data for users with a valid city and country entry#
+colstokeep <- c(5,6,7,16,17)#
+geoinfo <- matrix(NA,ncol=length(colstokeep),nrow=nrow(users))#
+geoinfo <- as.data.frame(geoinfo)#
+colnames(geoinfo) <- colnames(city_dict)[colstokeep]#
+present_entries <- (users$city %in% city_dict$City & #
+                    users$country %in% city_dict$Country)#
+matches <- match(users$city[present_entries],city_dict$City)#
+geoinfo[present_entries,] <- city_dict[matches,colstokeep]#
+#
+users_preprocessed <- cbind(users,geoinfo)#
+print("Some results:")#
+sum(is.na(users_preprocessed$city) & !is.na(users_preprocessed$country))#
+sum(!is.na(users_preprocessed$city) & is.na(users_preprocessed$country))#
+sum(is.na(users_preprocessed$city) | is.na(users_preprocessed$country))#
+save("users_preprocessed", file="data/users_preprocessed.RData")
+load(file = "data/loadedData.Rdata")
+Purpose: Extract geodata out of the users file#
+#################################################################
+#
+library(reshape2)#
+library(plyr)#
+#library(ggplot2)#
+library(stringr)#
+library(lubridate)#
+library(data.table)#
+library(glmnet)#
+library(chron)#
+library(stringr)#
+# =============#
+# = Functions =#
+# =============#
+recode <- function(x,reflistFrom, reflistTo){#
+  inlist <- (x %in% reflistFrom)#
+  elemind <- match(x,reflistFrom)#
+  replvec <- reflistTo[elemind]#
+  x[inlist] <- replvec[inlist]#
+  return(x)#
+}#
+#
+replaceEmpty <- function(char.vec)#
+{#
+  if (!is.character(char.vec)) {char.vec <- as.character(char.vec)}#
+  char.vec[grep("^\\s*$", char.vec)] <- NA#
+  return(char.vec)#
+}#
+#
+extractCountry2 <- function(string,world_states,US_states,CA_states)#
+{#
+  state <- rep(NA, length(string))#
+  region <- state#
+  unmatched_string <- state#
+  abrev <-  c(US_states$Abrev,CA_states$Abrev)#
+  state <- str_match(string,paste(c(world_states$Country),collapse="|"))#
+  #get rid of world countries from string, otherwise Tbilisi is in US#
+  string <- gsub(paste(c(world_states$Country),collapse="|"),"",string)#
+  matches <- str_match(string,paste(c(US_states$Country,US_states$Abrev),collapse="|"))#
+  region[!is.na(matches)] <- matches[!is.na(matches)]#
+  state[!is.na(matches)] <- "United States"#
+  matches <- str_match(string,paste(c(CA_states$Country,CA_states$Abrev),collapse="|"))#
+  region[!is.na(matches)] <- matches[!is.na(matches)]#
+  state[!is.na(matches)] <- "Canada"#
+  region <- recode(region,c(US_states$Abrev,CA_states$Abrev),c(US_states$Country,CA_states$Country))#
+  unmatched_string <- gsub(paste(c(world_states$Country,US_states$Country,CA_states$Country,abrev),collapse="|"),"",string)#
+  unmatched_string <- gsub(" *$","",unmatched_string)#
+  # fix 'special' candidates  #
+  matches <- str_match(string,paste(c("Yogyakarta","Jogjakarta"),collapse="|"))#
+  unmatched_string[!is.na(matches)] <- "Yogyakarta"#
+  state[!is.na(matches)] <- "Indonesia"#
+  matches <- str_match(string,paste(c("Phnom Penh","Phnum Penh"),collapse="|"))#
+  unmatched_string[!is.na(matches)] <- "Phnom Penh"#
+  state[!is.na(matches)] <- "Cambodia"#
+  return(cbind(unmatched_string, region, state))#
+}#
+# ======================#
+# = Data Preprocessing =#
+# ======================#
+#
+# Logic: (prefer exact string matching to Levenshtein distance matching)#
+#
+# 1. Split strings to known country and 'remaining string'#
+# 2a.Check if remaining string is present in the list of cities#
+# 2b. Check if a city from list of cities matches the beginning of remaining string (only 68 cases presently)#
+# 3. Try to infer missing country from city if city is present and known (only )#
+# 4. final step: attach Geo info for each user from known City and Country#
+#
+# Don't use locale for guessing location because it produces bad results#
+#
+# load and prepare dictionaries#
+# for the cities:#
+# downloaded from http://www.geobytes.com/GeoWorldMap.zip#
+#
+country_dict <- read.csv("data/Geodict/Countries.txt", stringsAsFactors = FALSE)#
+city_dict <- read.csv("data/Geodict/cities.txt", stringsAsFactors = FALSE)#
+country_dict <- country_dict[match(city_dict$CountryID,country_dict$CountryId),-c(1,15,16)]#
+city_dict <- cbind(city_dict,country_dict)#
+#remove multiple instances of a city (some cities have a lot of entries)#
+city_dict <- cbind(city_dict,country_dict)#
+city_dict <- city_dict[!duplicated(cbind(city_dict$City,city_dict$Country)),]#
+cities_list <- unique(city_dict$City)#
+#
+# for the countries:#
+# copied from Wiki lists#
+locale_vocab <- read.csv("data/Geodict/locale_list.txt")#
+world_states <- read.csv("data/Geodict/world_states.csv", stringsAsFactors = FALSE,header=F)#
+US_states <- read.csv("data/Geodict/US_states.csv", stringsAsFactors = FALSE,header=F)#
+CA_states <- read.csv("data/Geodict/CA_states.csv", stringsAsFactors = FALSE,header=F)#
+colnames(world_states) <- c("Country","Capital")#
+colnames(US_states) <- c("Country","Capital","Abrev")#
+colnames(CA_states) <- c("Country","Capital","Abrev")#
+colnames(locale_vocab) <- c("Country","Locale")#
+#
+# initial recoding and NA replacement#
+#
+load(file = "data/loadedData.Rdata")#
+#
+#replace strings of whitespaces, or emtpy strings with NA#
+users$locale <- replaceEmpty(users$locale)#
+users$location <- replaceEmpty(users$location)#
+#replace invalid locale data "id_ID" with NA#
+users$locale[!(users$locale %in% locale_vocab$Locale)] <- NA#
+users$location <- gsub("[0-9]","",users$location)#
+users$joinedAt <- as.Date(users$joinedAt)#
+# # Some initial function tests on different messy strings#
+# #
+# #
+# extractCountry2("Djoka Yogyakarta",world_states,US_states,CA_states)#
+# extractCountry2("Buenos Aires Brazil",world_states,US_states,CA_states)#
+# extractCountry2("Toronto Ontario",world_states,US_states,CA_states)#
+# extractCountry2("Los Angeles California",world_states,US_states,CA_states)#
+# extractCountry2("Los Angeles 82",world_states,US_states,CA_states)#
+# extractCountry2("Yogyakarta",world_states,US_states,CA_states)#
+# extractCountry2("Phnom Penh Phnum Penh",world_states,US_states,CA_states)#
+#
+# extract Country#
+extractedCountryInfo <- extractCountry2(users$location,world_states,US_states,CA_states)#
+remaining_string <- extractedCountryInfo[,1]#
+remaining_string <- gsub(" *$","",remaining_string)#
+#check how many remaining strings do not match a city from the dictionary#
+valid.cities <- (remaining_string %in% cities_list)#
+tail(users[!valid.cities,],100)#
+#
+users$unmatched_string <- rep(NA, length(remaining_string))#
+users$city <- rep(NA, length(remaining_string))#
+users$unmatched_string[!valid.cities] <- remaining_string[!valid.cities]#
+users$city[valid.cities] <- remaining_string[valid.cities]#
+users$region <- extractedCountryInfo[,2]#
+users$country <- extractedCountryInfo[,3]#
+#
+# tests of pmatch#
+# pmatch(c("med","davos"), c("mean", "median", "mode davos","medi"),duplicates.ok=T) # returns 2#
+# pmatch(c("Invalid", "Los Angeles", "Los Angeles"), c("Los Angeles", "Los Alamos"), dup=TRUE)#
+#
+#pmatch matches the each city against the BEGINNING of each element in the vector#
+matches <- pmatch(users$unmatched_string[!is.na(users$unmatched_string)],cities_list, dup = T)#
+sum(!is.na(matches))#
+mcity <- rep(NA, length(remaining_string))#
+mcity[!is.na(users$unmatched_string)] <- cities_list[matches]#
+#
+#from valid cities infer the missing country using city_dict#
+# Possible TODO (not straightforward since many cities belong to multiple countries)#
+# for this data set the number of such cases is zero see below#
+#
+# where city present and country missing get country from city (if unique)#
+matches <- match(users$city[!is.na(users$city) & is.na(users$country)], city_dict$City)#
+sum(!is.na(matches))#
+users$country[!is.na(users$city) & is.na(users$country)] <- city_dict$Country[matches]#
+# attach Geo data for users with a valid city and country entry#
+colstokeep <- c(5,6,7,16,17)#
+geoinfo <- matrix(NA,ncol=length(colstokeep),nrow=nrow(users))#
+geoinfo <- as.data.frame(geoinfo)#
+colnames(geoinfo) <- colnames(city_dict)[colstokeep]#
+present_entries <- (users$city %in% city_dict$City & #
+                    users$country %in% city_dict$Country)#
+matches <- match(users$city[present_entries],city_dict$City)#
+geoinfo[present_entries,] <- city_dict[matches,colstokeep]#
+#
+users_preprocessed <- cbind(users,geoinfo)#
+print("Some results:")#
+sum(is.na(users_preprocessed$city) & !is.na(users_preprocessed$country))#
+sum(!is.na(users_preprocessed$city) & is.na(users_preprocessed$country))#
+sum(is.na(users_preprocessed$city) | is.na(users_preprocessed$country))#
+save("users_preprocessed", file="data/users_preprocessed.RData")
+users
+names(users)
+users$unmatched_string
+names(users)
+users(location)
+users$city
+users$region
+users$country
+names(users)
+library(RJSONIO)#
+#
+is.empty <-#
+function(x)#
+  # Empty if NA, empty string or string with only spaces#
+  is.na(x) || x=="" || prod(unlist(strsplit(x," ")) == "")#
+#
+getCoordinates <- #
+function(city, country)#
+{#
+  if ( is.empty(city) && is.empty(country) ) #
+    c(NA,NA)#
+  else#
+  {#
+    city <- gsub(' ','%20',city)#
+    country <- gsub(' ','%20',country)#
+    print(city)#
+    print(country)#
+    url <- paste(#
+      "http://nominatim.openstreetmap.org/search?city="#
+      , city#
+      , "&contry="#
+      , country#
+      , "&limit=9&format=json"#
+      , sep="")#
+    x <- fromJSON(url)#
+    if(is.vector(x))#
+      c(x[[1]]$lat,x[[1]]$lon)#
+    else#
+      c(NA,NA)#
+  }#
+}
+apply(users[1:10,],1,function(x)getCoordinates(x[9],x[11]))
+apply(users[5,],1,function(x)getCoordinates(x[9],x[11]))
+users[5,9:11]
+coordinates<-apply(users,1,function(x)getCoordinates(x[9],x[11]))
+coordinates
+coordinates<-apply(users[100,],1,function(x)getCoordinates(x[9],x[11]))
+coordinates<-apply(users[100,],1,function(x)getCoordinates(x[9],x[11]))
+Purpose: Extract geodata out of the events file#
+#################################################################
+#
+library(reshape2)#
+library(plyr)#
+library(ggplot2)#
+library(stringr)#
+library(lubridate)#
+library(data.table)#
+library(glmnet)#
+library(chron)#
+library(stringr)#
+# =============#
+# = Functions =#
+# =============#
+recode <- function(x,reflistFrom, reflistTo){#
+  inlist <- (x %in% reflistFrom)#
+  elemind <- match(x,reflistFrom)#
+  replvec <- reflistTo[elemind]#
+  x[inlist] <- replvec[inlist]#
+  return(x)#
+}#
+#
+replaceEmpty <- function(char.vec)#
+{#
+  if (!is.character(char.vec)) {char.vec <- as.character(char.vec)}#
+  char.vec[grep("^\\s*$", char.vec)] <- NA#
+  return(char.vec)#
+}#
+#
+extractCountry2 <- function(string,world_states,US_states,CA_states)#
+{#
+  state <- rep(NA, length(string))#
+  region <- state#
+  unmatched_string <- state#
+  abrev <-  c(US_states$Abrev,CA_states$Abrev)#
+  state <- str_match(string,paste(c(world_states$Country),collapse="|"))#
+  #get rid of world countries from string, otherwise Tbilisi is in US#
+  string <- gsub(paste(c(world_states$Country),collapse="|"),"",string)#
+  matches <- str_match(string,paste(c(US_states$Country,US_states$Abrev),collapse="|"))#
+  region[!is.na(matches)] <- matches[!is.na(matches)]#
+  state[!is.na(matches)] <- "United States"#
+  matches <- str_match(string,paste(c(CA_states$Country,CA_states$Abrev),collapse="|"))#
+  region[!is.na(matches)] <- matches[!is.na(matches)]#
+  state[!is.na(matches)] <- "Canada"#
+  region <- recode(region,c(US_states$Abrev,CA_states$Abrev),c(US_states$Country,CA_states$Country))#
+  unmatched_string <- gsub(paste(c(world_states$Country,US_states$Country,CA_states$Country,abrev),collapse="|"),"",string)#
+  unmatched_string <- gsub(" *$","",unmatched_string)#
+  # fix 'special' candidates  #
+  matches <- str_match(string,paste(c("Yogyakarta","Jogjakarta"),collapse="|"))#
+  unmatched_string[!is.na(matches)] <- "Yogyakarta"#
+  state[!is.na(matches)] <- "Indonesia"#
+  matches <- str_match(string,paste(c("Phnom Penh","Phnum Penh"),collapse="|"))#
+  unmatched_string[!is.na(matches)] <- "Phnom Penh"#
+  state[!is.na(matches)] <- "Cambodia"#
+  return(cbind(unmatched_string, region, state))#
+}#
+#
+fillNAs <- function(var){#
+    var <- as.character(var)#
+    var[var == ""] <- NA#
+    var#
+  }#
+# ======================#
+# = Data Preprocessing =#
+# ======================#
+#
+# Logic: (prefer exact string matching to Levenshtein distance matching)#
+#
+# 1. Split strings to known country and 'remaining string'#
+# 2a.Check if remaining string is present in the list of cities#
+# 2b. Check if a city from list of cities matches the beginning of remaining string (only 68 cases presently)#
+# 3. Try to infer missing country from city if city is present and known (only )#
+# 4. final step: attach Geo info for each user from known City and Country#
+#
+# Don't use locale for guessing location because it produces bad results#
+#
+# load and prepare dictionaries#
+# for the cities:#
+# downloaded from http://www.geobytes.com/GeoWorldMap.zip#
+#
+country_dict <- read.csv("data/Geodict/Countries.txt", stringsAsFactors = FALSE)#
+city_dict <- read.csv("data/Geodict/cities.txt", stringsAsFactors = FALSE)#
+country_dict <- country_dict[match(city_dict$CountryID,country_dict$CountryId),-c(1,15,16)]#
+city_dict <- cbind(city_dict,country_dict)#
+#remove multiple instances of a city (some cities have a lot of entries)#
+city_dict <- cbind(city_dict,country_dict)#
+city_dict <- city_dict[!duplicated(cbind(city_dict$City,city_dict$Country)),]#
+cities_list <- unique(city_dict$City)#
+#
+# for the countries:#
+# copied from Wiki lists#
+locale_vocab <- read.csv("data/Geodict/locale_list.txt")#
+world_states <- read.csv("data/Geodict/world_states.csv", stringsAsFactors = FALSE,header=F)#
+US_states <- read.csv("data/Geodict/US_states.csv", stringsAsFactors = FALSE,header=F)#
+CA_states <- read.csv("data/Geodict/CA_states.csv", stringsAsFactors = FALSE,header=F)#
+colnames(world_states) <- c("Country","Capital")#
+colnames(US_states) <- c("Country","Capital","Abrev")#
+colnames(CA_states) <- c("Country","Capital","Abrev")#
+colnames(locale_vocab) <- c("Country","Locale")#
+#
+# initial recoding and NA replacement#
+#
+load(file = "data/loadedData.Rdata")#
+#
+#replace strings of whitespaces, or emtpy strings with NA#
+users$locale <- replaceEmpty(users$locale)#
+users$location <- replaceEmpty(users$location)#
+#replace invalid locale data "id_ID" with NA#
+users$locale[!(users$locale %in% locale_vocab$Locale)] <- NA#
+users$location <- gsub("[0-9]","",users$location)#
+users$joinedAt <- as.Date(users$joinedAt)#
+# ==========================#
+# = Your Comment Goes here =#
+# ==========================#
+#
+events.orig <- events#
+#events <- events.orig#
+for(var in c("city", "state", "zip", "country", "lat", "lng")){#
+  events[, var] <- fillNAs(events[, var])#
+}#
+events$lat <- as.numeric(events$lat)#
+events$lng <- as.numeric(events$lng)#
+#
+summary(events$lat)#
+summary(events$lng)#
+#
+# % of exact matches to cities_list#
+round(100 * prop.table(table(events$city %in% cities_list)))#
+# There is one particular problem with Ontario#
+grep("Ontario|\\s+on", events$city, ignore.case = TRUE, value = TRUE)#
+#
+events$city[grep("Ontario|\\s+on", events$city, ignore.case = TRUE)] <-#
+  gsub("\\s+.*", "", #
+      events$city[grep("Ontario|\\s+on", events$city, ignore.case = TRUE)])#
+#
+index.not.match <- !(events$city %in% cities_list)#
+matches <- pmatch(events[index.not.match, "city"], cities_list, dup = T)#
+#
+sum(!is.na(matches))#
+#
+na.omit(data.frame(new.match = cities_list[matches], #
+  original.string = events[index.not.match, "city"]))#
+events[index.not.match, "city"][!is.na(matches)] <- cities_list[matches]#
+unique(events[index.not.match, "city"][is.na(matches)])#
+#
+#from valid cities infer the missing country using city_dict#
+# Possible TODO (not straightforward since many cities belong to multiple countries)#
+# for this data set the number of such cases is zero see below#
+#
+# where city present and country missing get country from city (if unique)#
+matches <- match(events$city[!is.na(events$city) & is.na(events$country)], #
+  city_dict$City)#
+sum(!is.na(matches))#
+### Manual fixes#
+replacment <- city_dict$Country[matches]#
+replacment[1] <- "Canada"#
+replacment[7] <- "Italy"#
+replacment[9] <- "Canada"#
+events$country[!is.na(events$city) & is.na(events$country)] <- city_dict$Country[matches]#
+colstokeep <- c(5,6,7,16,17)#
+geoinfo <- matrix(NA,ncol=length(colstokeep),nrow=nrow(events))#
+geoinfo <- as.data.frame(geoinfo)#
+colnames(geoinfo) <- colnames(city_dict)[colstokeep]#
+present_entries <- (events$city %in% city_dict$City & #
+                    events$country %in% city_dict$Country)#
+matches <- match(events$city[present_entries],city_dict$City)#
+geoinfo[present_entries,] <- city_dict[matches,colstokeep]#
+#
+events_preprocessed <- cbind(events,geoinfo)#
+## BEWARE!#
+## Haven't checked compatibilty with preprocessing script number 3!#
+#
+### save("events_preprocessed",file="events_preprocessed.RData")
+users
+names(users)
+ls()
+names(users_preprocessed)
+users[1,]
+users_preprocessed[1,]
+sum(is.NA(users_preprocessed$Latitude))
+sum(is.na(users_preprocessed$Latitude))
+users_preprocessed[is.na(users_preprocessed$Latitude),]
+nrow(users_preprocessed[is.na(users_preprocessed$Latitude),])
+nrow(users_preprocessed[is.na(users_preprocessed$Latitude)&&!is.na(users_preprocessed$location),])
+list<-users_preprocessed[is.na(users_preprocessed$Latitude),]
+list$location
+users[1:10,]$location
+users[1000:1010,]$location
+gGeoCode(users[1000:1010,]$location,verbose=TRUE,floodControl=TRUE)
+users[1000:1010,]$location
+gGeoCode(users[1000:1010,],verbose=TRUE,floodControl=TRUE,adressCol="location")
+names(users)
+gGeoCode("3817 Spruce St, Philadelphia, PA 19104")
+gGeoCode(users[1000:1010,],verbose=TRUE,floodControl=TRUE,adresscol="location")
+type(users[1:2,])
+typeof(users[1:2,])
+typeof(users)
+typeof(users$location)
+typeof(list(users$location))
+list(users$location)
+gGeoCode(list(users[1000:1010,]),verbose=TRUE,floodControl=TRUE)
+vector(1,2)
+c(1,2)
+c(users[1000:1010,])
+c(users[1000:1010,]$location)
+gGeoCode(c(users[1000:1010,]),verbose=TRUE,floodControl=TRUE)
+c(1,2)
+typeof(c(1,2))
+typeof(c(1,2,2,3,3,4,5,5,6))
+typeof(users$location)
+gGeoCode(c(users[1000:1010,]$location),verbose=TRUE,floodControl=TRUE)
+gGeoCode(list(users[1000:1010,]$location),verbose=TRUE,floodControl=TRUE)
+names(users)
+coords<-apply(users[1000:1010],1,function(x)gGeoCode(x[6],verbose=TRUE,floodControl=TRUE))
+coords<-apply(users[1000:1010,],1,function(x)gGeoCode(x[6],verbose=TRUE,floodControl=TRUE))
+coords
+coords[1,]
+nrow(users)
+users_processed[1005,]
+users_preprocessed[1005,]
+coords1 <- apply(users[1:500],1,function(x)gGeoCode(x[6],verbose=TRUE,floodControl=TRUE))
+coords1 <- apply(users[1:500,],1,function(x)gGeoCode(x[6],verbose=TRUE,floodControl=TRUE))
+warnings()
+coords1
+coords2 <- apply(users[501:1000,],1,function(x)gGeoCode(x[6],verbose=TRUE,floodControl=TRUE))
+save(coords1,coords2,file="coordsUsers.Rdata")
+coords2
+users[1000,]$location
+users[999,]$location
+users[1000,]$location
+gGeoCode(NA)
+gGeoCode(NA)
+coords3 <- apply(users[1001:1500,],1,function(x)gGeoCode(x[6],verbose=TRUE,floodControl=TRUE))
+coords3
+sum(is.na(coords3[1,]))
+warnings()
+save(coords1,coords2,coords3,file="coordsUsers.Rdata")
+coords4 <- apply(users[1501:2000,],1,function(x)gGeoCode(x[6],verbose=TRUE,floodControl=TRUE))
+coords4
+coords5 <- apply(users[2001:2500,],1,function(x)gGeoCode(x[6],verbose=TRUE,floodControl=TRUE))
+coords6 <- apply(users[2501:3000,],1,function(x)gGeoCode(x[6],verbose=TRUE,floodControl=TRUE))
+coords6
+gGeoCode(NA)
+gGeoCode(NA)
+gGeoCode(NA)
+length(coords1)
+length(coords2)
+length(coords3)
+length(coords3[1,])
+coords[1,500]
+coords[1,]
+coords1[1,]
+coords2[1,]
+coords2[,1000]
+coords2[,500]
+lat <- c(coords1[1,],coords2[1,])
+lat
+lat <- c(coords1[1,],coords2[1,],coords3[1,],coords4[1,],coords5[1,],coords6[1,])
+long <- c(coords1[2,],coords2[2,],coords3[2,],coords4[2,],coords5[2,],coords6[2,])
+lat
+long
+length(long)
+sum(is.na(long))
+lat[657]
+long[657]
+users[657,6]
+plot <- data.frame(one=NA,two=NA,latitude=lat,longitude=long)
+plot
+library(geoPlot)
+geoPlot(plot)
+plot
+help(geoPlot)
+geoPlot(plot,maptype="satellite")
+geoPlot(plot,maptype="hybrid")
+geoPlot(plot,maptype="hybrid",zoom=1)
+geoPlot(plot,maptype="hybrid",zoom=2)
+geoPlot(plot[1,],maptype="hybrid",zoom=2)
+geoPlot(plot[1:100,],maptype="hybrid",zoom=2)
+typeof(plot)
+plot$latitude
+names(plot)
+users[3501,]$location
+library(RJSONIO)
+getCoordinates <- #
+function(city, country)#
+{#
+  if ( is.empty(city) && is.empty(country) ) #
+    c(NA,NA)#
+  else#
+  {#
+    city <- gsub(' ','%20',city)#
+    country <- gsub(' ','%20',country)#
+    url <- paste(#
+      "http://nominatim.openstreetmap.org/search?city="#
+      , city#
+      , "&contry="#
+      , country#
+      , "&limit=9&format=json"#
+      , sep="")#
+    x <- fromJSON(url)#
+    if(is.vector(x))#
+      c(x[[1]]$lat,x[[1]]$lon)#
+    else#
+      c(NA,NA)#
+  }#
+}
+nrow(users)
+coords7 <- apply(users[3001:3500,],1,function(x)getCoordinatesfromLoc(x[6]))
+getCoordinatesfromLoc <- #
+function(location)#
+{#
+  if ( is.empty(location) ) #
+    c(NA,NA)#
+  else#
+  {#
+    location <- gsub(' ','%20',location)#
+    url <- paste(#
+      "http://nominatim.openstreetmap.org/search?"#
+      , location#
+      , "&limit=9&format=json"#
+      , sep="")#
+    x <- fromJSON(url)#
+    if(is.vector(x))#
+      c(x[[1]]$lat,x[[1]]$lon)#
+    else#
+      c(NA,NA)#
+  }#
+}
+coords7 <- apply(users[3001:3500,],1,function(x)getCoordinatesfromLoc(x[6]))
+getCoordinatesfromLoc <- #
+function(location)#
+{#
+  if ( is.empty(location) ) #
+    c(NA,NA)#
+  else#
+  {#
+    location <- gsub(' ','%20',location)#
+    url <- paste(#
+      "http://nominatim.openstreetmap.org/search?"#
+      , location#
+      , "&limit=9&format=json"#
+      , sep="")#
+    print(url)#
+    x <- fromJSON(url)#
+    if(is.vector(x))#
+      c(x[[1]]$lat,x[[1]]$lon)#
+    else#
+      c(NA,NA)#
+  }#
+}
+coords7 <- apply(users[3001:3500,],1,function(x)getCoordinatesfromLoc(x[6]))
+getCoordinatesfromLoc <- #
+function(location)#
+{#
+  if ( is.empty(location) ) #
+    c(NA,NA)#
+  else#
+  {#
+    location <- gsub(' ','%20',location)#
+    url <- paste(#
+      "http://nominatim.openstreetmap.org/search?q="#
+      , location#
+      , "&limit=9&format=json"#
+      , sep="")#
+    print(url)#
+    x <- fromJSON(url)#
+    if(is.vector(x))#
+      c(x[[1]]$lat,x[[1]]$lon)#
+    else#
+      c(NA,NA)#
+  }#
+}
+coords7 <- apply(users[3001:3500,],1,function(x)getCoordinatesfromLoc(x[6]))
+help(fromJSON)
+library(RJSONIO)
+getCoordinates("Madrid","España")
+getCoordinatesLoc("Madrid","España")
+getCoordinatesLoc("Madrid","España")
+getCoordinates <- #
+function(city, country)#
+{#
+  if ( is.empty(city) && is.empty(country) ) #
+    c(NA,NA)#
+  else#
+  {#
+    city <- gsub(' ','%20',city)#
+    country <- gsub(' ','%20',country)#
+    url <- paste(#
+      "http://nominatim.openstreetmap.org/search?city="#
+      , city#
+      , "&contry="#
+      , country#
+      , "&limit=9&format=json"#
+      , sep="")#
+    x <- RJSONIO.fromJSON(url)#
+    if(is.vector(x))#
+      c(x[[1]]$lat,x[[1]]$lon)#
+    else#
+      c(NA,NA)#
+  }#
+}
+getCoordinatesLoc("Madrid","España")
+getCoordinates("Madrid","España")
+coords6
