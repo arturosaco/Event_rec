@@ -139,10 +139,6 @@ city.match.1 <- join(city.match, city_dict[,c("City", "Latitude", "Longitude")],
 
 sum(ddply(city.match.1, "City", summarise, length(Latitude))[,2]==1)
 
-### I have doubts of the validity of city_dict, look at example below
-
-city_dict[city_dict$City=="Mexico", ]
-
 ### I don't think it's worth doing it anymore.
 
 events_preprocessed <- events
