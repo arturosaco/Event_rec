@@ -33,17 +33,24 @@ function(location)
 load("data/users_preprocessed.Rdata")
 
 # Using Google Maps
-#library(taRifx.geo)
+library(taRifx.geo)
 #coords <- apply(users,1,function(x)gGeoCode(x[6],verbose=TRUE,floodControl=TRUE))
 
-# Using OpenStreeMaps
+users_preprocessed$Latitude <- users_latitude
+users_preprocessed$Longitude <- users_longitude
+
+# Using OpenStreetMaps
 found <- 0
 for (i in 1:nrow(users_preprocessed))
 {
-	if ( is.na(users_preprocessed[i,]$Latitude) &&
+	if ( is.na(users_preprocessed[i,]$Latitude) && 
 	     !is.empty(users_preprocessed[i,]$location) )
 	{
-		coords = getCoordinatesfromLoc(users_preprocessed[i,]$location)
+		#OpenStreetMaps
+		#coords <- getCoordinatesfromLoc(users_preprocessed[i,]$location)
+		#print(coords)
+		coords<-gGeoCode(users_preprocessed[i,]$location,verbose=TRUE,floodControl=TRUE)
+		Sys.sleep(0.01)
 		users_preprocessed[i,]$Latitude <- coords[1]
 		users_preprocessed[i,]$Longitude <- coords[2]
 		found <- found + 1
@@ -53,4 +60,5 @@ for (i in 1:nrow(users_preprocessed))
 users_latitude <- users_preprocessed$Latitude
 users_longitude <- users_preprocessed$Longitude
 
-save(users_latitude, users_longitude, file="data/users_coordinates.Rdata")
+users_coordinates <- data.frame(user=users_preprocessed$user_id,Latitude=users_latitude,Longitude=users_longitude)
+save(users_coordinates, users_longitude, file="data/users_coordinates.Rdata")
