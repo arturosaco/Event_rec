@@ -18,6 +18,8 @@ library(stringr)
 #setwd("F:/UCL/Applied ML/Event Project/Event_rec/")
 load("data/loadedData.Rdata")
 load("data/users_preprocessed.RData")
+load("data/events_preprocessed.RData")
+
 
 users_preprocessed.orig <- users_preprocessed
 events.orig <- events
@@ -58,30 +60,37 @@ deg2rad <- function(deg)
 
 
 #events
-events <- events[,1:9]
-events <- apply(events,2,replaceEmpty)
+events.sub <- events_preprocessed[,1:9]
 
-colnames(events) <- c("event_id","creator_id","event_start_time","event_city",
+colnames(events.sub) <- c("event_id","creator_id","event_start_time","event_city",
                       "event_state","event_zip","event_country","event_lat",
                       "event_lng")
-events <- as.data.frame(events)
+events.sub <- as.data.frame(events.sub)
+    
+events.sub$event_id <- factor(events.sub$event_id)
+events.sub$event_lat <- as.numeric(events.sub$event_lat)
+events.sub$event_lng <- as.numeric(events.sub$event_lng)
 
-events$event_id <- factor(events$event_id)
-events$event_lat <- as.numeric(events$event_lat)
-events$event_lng <- as.numeric(events$event_lng)
-events$event_lat[(events$event_lat==1) & (events$event_lng==1)] <- NA
-events$event_lng[(events$event_lat==1) & (events$event_lng==1)] <- NA
-events$event_lat[(events$event_lat==2) & (events$event_lng==2)] <- NA
-events$event_lng[(events$event_lat==2) & (events$event_lng==2)] <- NA
+# events.sub$event_lat[(events.sub$event_lat==1) & (events.sub$event_lng==1)] <- NA
+# events.sub$event_lng[(events.sub$event_lat==1) & (events.sub$event_lng==1)] <- NA
+# events.sub$event_lat[(events.sub$event_lat==2) & (events.sub$event_lng==2)] <- NA
+# events.sub$event_lng[(events.sub$event_lat==2) & (events.sub$event_lng==2)] <- NA
 
-events$event_start_time <- as.Date(events$event_start_time)
-events$event_start_time_year <- as.factor(year(events$event_start_time))
-events$event_start_time_month <- as.factor(month(events$event_start_time))
-events$event_start_time_day <- as.factor(weekdays(events$event_start_time))
-summary(events)
+### All the previous assignments are void, to see run next 2 lines
+# table((events.sub$event_lat==1) & (events.sub$event_lng==1))
+# table((events.sub$event_lat==2) & (events.sub$event_lng==2))
+
+events.sub$event_start_time <- as.Date(events.sub$event_start_time)
+events.sub$event_start_time_year <- as.factor(year(events.sub$event_start_time))
+events.sub$event_start_time_month <- as.factor(month(events.sub$event_start_time))
+events.sub$event_start_time_day <- as.factor(weekdays(events.sub$event_start_time))
+summary(events.sub)
+
+events <- events.sub
+rm(events.sub)
 
 #users
-users <- users_preprocessed[,-6]
+users <- users_preprocessed[, names(users_preprocessed) != "location"]
 colnames(users)[13] <- "timezone_dict"
 users$user_id <- as.factor(users$user_id)
 users$locale <- as.factor(users$locale)
@@ -150,4 +159,5 @@ train$interested.num <- as.factor(train$interested.num)
 train <- train[,!names(train) %in% c("interested", "not_interested")]
 
 # once the recoding is done, uncomment:
-#save("train","test","users","users.friends","event.attendees","events",file="codedData.Rdata")
+# save("train","test","users","users.friends","event.attendees","events",
+#  file="codedData.Rdata")

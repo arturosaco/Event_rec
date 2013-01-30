@@ -66,13 +66,6 @@ extractCountry2 <- function(string,world_states,US_states,CA_states)
   return(cbind(unmatched_string, region, state))
 }
 
-fillNAs <- function(var){
-    var <- as.character(var)
-    var[var == ""] <- NA
-    var
-  }
-
-
 # ======================
 # = Data Preprocessing =
 # ======================
@@ -115,78 +108,42 @@ colnames(locale_vocab) <- c("Country","Locale")
 
 load(file = "data/loadedData.Rdata")
 
-#replace strings of whitespaces, or emtpy strings with NA
-users$locale <- replaceEmpty(users$locale)
-users$location <- replaceEmpty(users$location)
-#replace invalid locale data "id_ID" with NA
-users$locale[!(users$locale %in% locale_vocab$Locale)] <- NA
-users$location <- gsub("[0-9]","",users$location)
-users$joinedAt <- as.Date(users$joinedAt)
+for(var in c("city", "state", "zip", "country", "lat", "lng")){
+  events[, var] <- replaceEmpty(events[, var])
+}
 
-
-# ==========================
-# = Your Comment Goes here =
-# ==========================
+# =============================================
+# = Retrieve latitude and longitude from city =
+# =============================================
 
 events.orig <- events
 #events <- events.orig
-for(var in c("city", "state", "zip", "country", "lat", "lng")){
-  events[, var] <- fillNAs(events[, var])
-}
 events$lat <- as.numeric(events$lat)
 events$lng <- as.numeric(events$lng)
 
 summary(events$lat)
 summary(events$lng)
 
-# % of exact matches to cities_list
-round(100 * prop.table(table(events$city %in% cities_list)))
-# There is one particular problem with Ontario
-grep("Ontario|\\s+on", events$city, ignore.case = TRUE, value = TRUE)
+table(is.na(events.orig$lat) & !is.na(events.orig$city))
+cities.to.locate <- unique(events.orig[is.na(events.orig$lat) & 
+  !is.na(events.orig$city), "city"])
+index.to.locate <- is.na(events.orig$lat) &  !is.na(events.orig$city)
+cities.to.locate[cities.to.locate == "West Los Angeles"] <- "Los Angeles"
+cities.to.locate[cities.to.locate == "Mexico City"] <- "Mexico"
 
-events$city[grep("Ontario|\\s+on", events$city, ignore.case = TRUE)] <-
-  gsub("\\s+.*", "", 
-      events$city[grep("Ontario|\\s+on", events$city, ignore.case = TRUE)])
+match <- pmatch(cities.to.locate, city_dict$City, dup = TRUE)
+city.match <- data.frame(City.orig = cities.to.locate, City = city_dict$City[match])
+city.match.1 <- join(city.match, city_dict[,c("City", "Latitude", "Longitude")], type = "inner")
 
-index.not.match <- !(events$city %in% cities_list)
-matches <- pmatch(events[index.not.match, "city"], cities_list, dup = T)
+### We can infer 23 latitudes and longitudes unambiguously 
 
-sum(!is.na(matches))
+sum(ddply(city.match.1, "City", summarise, length(Latitude))[,2]==1)
 
-na.omit(data.frame(new.match = cities_list[matches], 
-  original.string = events[index.not.match, "city"]))
-events[index.not.match, "city"][!is.na(matches)] <- cities_list[matches]
-unique(events[index.not.match, "city"][is.na(matches)])
+### I have doubts of the validity of city_dict, look at example below
 
-#from valid cities infer the missing country using city_dict
-# Possible TODO (not straightforward since many cities belong to multiple countries)
-# for this data set the number of such cases is zero see below
+city_dict[city_dict$City=="Mexico", ]
 
-# where city present and country missing get country from city (if unique)
-matches <- match(events$city[!is.na(events$city) & is.na(events$country)], 
-  city_dict$City)
-sum(!is.na(matches))
-### Manual fixes
-replacment <- city_dict$Country[matches]
-replacment[1] <- "Canada"
-replacment[7] <- "Italy"
-replacment[9] <- "Canada"
-events$country[!is.na(events$city) & is.na(events$country)] <- city_dict$Country[matches]
+### I don't think it's worth doing it anymore.
 
-
-colstokeep <- c(5,6,7,16,17)
-geoinfo <- matrix(NA,ncol=length(colstokeep),nrow=nrow(events))
-geoinfo <- as.data.frame(geoinfo)
-colnames(geoinfo) <- colnames(city_dict)[colstokeep]
-present_entries <- (events$city %in% city_dict$City & 
-                    events$country %in% city_dict$Country)
-matches <- match(events$city[present_entries],city_dict$City)
-geoinfo[present_entries,] <- city_dict[matches,colstokeep]
-
-events_preprocessed <- cbind(events,geoinfo)
-
-
-## BEWARE!
-## Haven't checked compatibilty with preprocessing script number 3!
-
-### save("events_preprocessed",file="events_preprocessed.RData")
+events_preprocessed <- events
+save("events_preprocessed",file="data/events_preprocessed.RData")
