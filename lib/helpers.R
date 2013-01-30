@@ -15,11 +15,6 @@ melt.ish <- function(data.int){
   names(out) <- c("event", "user_id")
   out
 }
-putNAs <- function(var){
-    var <- as.character(var)
-    var[var == ""] <- NA
-    var
-  }
 
 
 countIDs <- function(col){
