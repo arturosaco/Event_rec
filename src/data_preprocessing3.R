@@ -68,8 +68,8 @@ colnames(events.sub) <- c("event_id","creator_id","event_start_time","event_city
 events.sub <- as.data.frame(events.sub)
     
 events.sub$event_id <- factor(events.sub$event_id)
-events.sub$event_lat <- as.numeric(events.sub$event_lat)
-events.sub$event_lng <- as.numeric(events.sub$event_lng)
+events$event_lat <- as.numeric(as.character(events$event_lat))
+events$event_lng <- as.numeric(as.character(events$event_lng))
 
 # events.sub$event_lat[(events.sub$event_lat==1) & (events.sub$event_lng==1)] <- NA
 # events.sub$event_lng[(events.sub$event_lat==1) & (events.sub$event_lng==1)] <- NA

@@ -3,6 +3,8 @@ deg2rad <- function(deg) (deg*pi/180)
 getDistanceLatLong <- function(lat1, lon1, lat2, lon2)
 {
 	r <- 6371
+	print(lat2)
+	print(lat1)
 	dLat <- deg2rad(lat2-lat1) 
 	dLon <- deg2rad(lon2-lon1); 
   	a <-  sin(dLat/2) * sin(dLat/2) + cos(deg2rad(lat1)) * 
@@ -14,9 +16,10 @@ getDistanceLatLong <- function(lat1, lon1, lat2, lon2)
 
 getDistance <- function(user_id, event_id)
 {
-	user <- users_preprocessed[match(user_id,users_preprocessed$user_id),];
-	event <- events_preprocessed[match(event_id,events_preprocessed$user_id),];
-	return(getDistanceLatLong(user$Latitude,user$Longitude,event$Latitude,event$Longitude));
+	user <- users[match(user_id,users$user_id),];
+	event <- events[match(event_id,events$event_id),];
+	print(event)
+	return(getDistanceLatLong(user$Latitude,user$Longitude,event$event_lat,event$event_long));
 }
 
 load("data/users_preprocessed.Rdata");
