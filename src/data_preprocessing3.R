@@ -159,5 +159,4 @@ train$interested.num <- as.factor(train$interested.num)
 train <- train[,!names(train) %in% c("interested", "not_interested")]
 
 # once the recoding is done, uncomment:
-# save("train","test","users","users.friends","event.attendees","events",
-#  file="codedData.Rdata")
+save("train","test","users","users.friends","event.attendees","events",file="data/codedData.Rdata")
