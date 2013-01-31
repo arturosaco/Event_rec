@@ -107,7 +107,7 @@ colnames(locale_vocab) <- c("Country","Locale")
 
 # initial recoding and NA replacement
 
-load(file = "data/loadedData.Rdata")
+load(file = "data/stage_1.Rdata")
 
 #replace strings of whitespaces, or emtpy strings with NA
 users$locale <- replaceEmpty(users$locale)

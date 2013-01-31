@@ -56,4 +56,4 @@ users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
 event.attendees <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
 
 save("train","test","users","users.friends","event.attendees","events",
-  file="data/loadedData.Rdata")
+  file="data/stage_1.Rdata")

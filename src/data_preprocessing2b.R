@@ -106,7 +106,7 @@ colnames(locale_vocab) <- c("Country","Locale")
 
 # initial recoding and NA replacement
 
-load(file = "data/loadedData.Rdata")
+load(file = "data/stage_1.Rdata")
 
 for(var in c("city", "state", "zip", "country", "lat", "lng")){
   events[, var] <- replaceEmpty(events[, var])

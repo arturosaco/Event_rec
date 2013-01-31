@@ -16,7 +16,7 @@ library(chron)
 library(stringr)
 
 #setwd("F:/UCL/Applied ML/Event Project/Event_rec/")
-load("data/loadedData.Rdata")
+load("data/stage_1.Rdata")
 load("data/users_preprocessed.RData")
 load("data/events_preprocessed.RData")
 
@@ -46,10 +46,30 @@ getDistanceFromLatLonInKm <- function(lat1,lon1,lat2,lon2)
   return(d)
 }
 
-deg2rad <- function(deg)
+deg2rad <- function(deg) (deg*pi/180)
+
+getDistanceLatLong <- function(lat1, lon1, lat2, lon2)
 {
-  return(deg * (pi/180))
+  r <- 6371
+  dLat <- deg2rad(lat2-lat1) 
+  dLon <- deg2rad(lon2-lon1); 
+    a <-  sin(dLat/2) * sin(dLat/2) + cos(deg2rad(lat1)) * 
+          cos(deg2rad(lat2)) * sin(dLon/2) * sin(dLon/2)
+    c <- 2 * atan2(sqrt(a), sqrt(1-a))
+    d <- r * c # Distance in km
+    return(d)
 }
+
+getDistance <- function(id_row)
+{
+  user_id <- id_row["user_id"]
+  event_id <- id_row["event_id"]
+  user <- users[match(user_id,users$user_id),];
+  event <- events[match(event_id,events$event_id),];
+  return(getDistanceLatLong(user$Latitude,
+    user$Longitude,event$event_lat,event$event_lng));
+}
+
 
 # Phnom Penh to Los Angeles
 #getDistanceFromLatLonInKm(11.55,105,34.05,-118.2)
@@ -68,8 +88,8 @@ colnames(events.sub) <- c("event_id","creator_id","event_start_time","event_city
 events.sub <- as.data.frame(events.sub)
     
 events.sub$event_id <- factor(events.sub$event_id)
-events$event_lat <- as.numeric(as.character(events$event_lat))
-events$event_lng <- as.numeric(as.character(events$event_lng))
+events.sub$event_lat <- as.numeric(as.character(events.sub$event_lat))
+events.sub$event_lng <- as.numeric(as.character(events.sub$event_lng))
 
 # events.sub$event_lat[(events.sub$event_lat==1) & (events.sub$event_lng==1)] <- NA
 # events.sub$event_lng[(events.sub$event_lat==1) & (events.sub$event_lng==1)] <- NA
@@ -158,5 +178,29 @@ train$interested.num <- as.factor(train$interested.num)
 # personally I strongly opt for discarding the original interest values
 train <- train[,!names(train) %in% c("interested", "not_interested")]
 
+load(file = "data/distances.Rdata")
+load(file = "data/users_coordinates.Rdata")
+
+users$Latitude <- NULL
+users$Longitude <- NULL
+names(users_coordinates)[1] <- "user_id"
+
+users <- join(users, users_coordinates)
+users$Latitude <- as.numeric(as.character(users$Latitude))
+users$Longitude <- as.numeric(as.character(users$Longitude))
+
+users[users$user_id %in% train[2, "user_id"] , c("Latitude", "Longitude")]
+events[events$event_id %in% train[2, "event_id"] , c("event_lat", "event_lng")]
+
+train$distance <- apply(train, 1, getDistance)
+test$distance <- apply(test, 1, getDistance)
+
+train$user_id <- as.numeric(as.character(train$user_id))
+test$user_id <- as.numeric(as.character(test$user_id))
+train$event_id <- as.numeric(as.character(train$event_id))
+test$event_id <- as.numeric(as.character(test$event_id))
+names(event.attendees)[names(event.attendees) == "event"] <- "event_id"
+
 # once the recoding is done, uncomment:
-save("train","test","users","users.friends","event.attendees","events",file="data/codedData.Rdata")
+save("train","test","users","users.friends","event.attendees","events",
+  file="data/stage_2.Rdata")
