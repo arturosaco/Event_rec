@@ -80,9 +80,9 @@ getDistance <- function(id_row)
 
 
 #events
-events.sub <- events_preprocessed[,1:9]
+events.sub <- events_preprocessed
 
-colnames(events.sub) <- c("event_id","creator_id","event_start_time","event_city",
+colnames(events.sub)[1:9] <- c("event_id","creator_id","event_start_time","event_city",
                       "event_state","event_zip","event_country","event_lat",
                       "event_lng")
 events.sub <- as.data.frame(events.sub)
