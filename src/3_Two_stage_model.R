@@ -8,8 +8,10 @@ load.project()
 # train <- read.csv("data/train.csv")
 # test <- read.csv("data/test.csv")
 # users <- read.csv("data/users.csv", stringsAsFactors = FALSE)
-users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
-att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
+# users.friends <- read.csv("data/user_friends.csv", stringsAsFactors = FALSE)
+# att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
+
+load("data/stage_2.Rdata")
 
 # ========================
 # = Process friends file =
@@ -26,35 +28,35 @@ att <- read.csv("data/event_attendees.csv", stringsAsFactors = FALSE)
 ### Take the subset for which we have information in the users table
 ### this is a SMALL subset, less than 1% of friends have info in the users table
 
-# friends.2 <- friends.1[friends.1$user_id %in% users_preprocessed$user_id, ]
+# friends.2 <- friends.1[friends.1$user_id %in% users$user_id, ]
 # cache("friends.2")
 
-users_preprocessed$user_id <- factor(users_preprocessed$user_id)
+# users$user_id <- factor(users$user_id)
 
 ### Join with the users table
 
-# friends.3 <-  users_preprocessed[users_preprocessed$user_id %in% 
+# friends.3 <-  users[users$user_id %in% 
 #   friends.2$user_id, ]
 # cache("friends.3")
 
 ### Un-list the attendance file
 
-# att.yes <- melt.ish.1(att[, c("event", "yes")])
-# att.no <- melt.ish.1(att[, c("event", "no")])
-# att.maybe <- melt.ish.1(att[, c("event", "maybe")])
-# att.invited <- melt.ish.1(att[, c("event", "invited")])
+# event.attendees.yes <- melt.ish(event.attendees[, c("event", "yes")])
+# event.attendees.no <- melt.ish(event.attendees[, c("event", "no")])
+# event.attendees.maybe <- melt.ish(event.attendees[, c("event", "maybe")])
+# event.attendees.invited <- melt.ish(event.attendees[, c("event", "invited")])
 
 ### Construct the numeric interest variable 
 
-# att.maybe$int.num <- 1
-# att.no$int.num <- -1
-# att.yes$int.num <- 2
-# att.invited$int.num <- 0
+# event.attendees.maybe$int.num <- 1
+# event.attendees.no$int.num <- -1
+# event.attendees.yes$int.num <- 2
+# event.attendees.invited$int.num <- 0
 
 ### Put together the pieces of the attendance file and join 
 ### with the friends table (which also contains the users table) 
 
-# att.1 <- rbind(att.maybe, att.no, att.yes, att.invited)
+# event.attendees.1 <- rbind(event.attendees.maybe, event.attendees.no, event.attendees.yes, event.attendees.invited)
 # cache("att.1")
 
 friends.4 <- join(att.1[att.1$user_id %in% friends.3$user_id, ], friends.3)
