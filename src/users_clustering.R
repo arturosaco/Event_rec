@@ -1,5 +1,6 @@
 # LIBRARIES
 library(igraph)
+library(plyr)
 
 
 #FUNCTIONS
@@ -35,12 +36,39 @@ getInterestSimilarity <- function(user1_ind, user2_ind)
 }
 
 # Common events
-getEventsTogether <- function(user1_ind, user2_ind)
+getRatio <- function(m,user1_ind, user2_ind)
 {
-	yes1 <- yes[yes[,2] == user1_ind,]
-	yes2 <- yes[yes[,2] == user2_ind,]
-	yesRatio <- sum(!is.element(yes1,yes2)) / (nrow(yes1)+nrow(yes2))
-	return(yesRatio)
+	one <- matrix(m[m[,2] == user1_ind,],ncol=2)
+	two <- matrix(m[m[,2] == user2_ind,],ncol=2)
+	if ( (nrow(one)==0) || (nrow(two)==0) )
+		return(NA)
+	return(2*sum(is.element(one[,1],two[,1])) / (nrow(one)+nrow(two)))
+}
+getRatioEventsTogether <- function(user1_ind, user2_ind)
+{
+	yesRatio <- getRatio(yes,user1_ind, user2_ind)
+	noRatio <- getRatio(no,user1_ind, user2_ind)
+	maybeRatio <- getRatio(maybe,user1_ind, user2_ind)
+	result <- 0
+	number <- 3
+	if ( is.na(yesRatio) )
+	{
+		number <- number - 1
+		yesRatio <- 0
+	}
+	if ( is.na(noRatio) )
+	{
+		number <- number - 1
+		noRatio <- 0
+	}
+	if ( is.na(maybeRatio) )
+	{
+		number <- number - 1
+		maybeRatio <- 0
+	}
+	if ( number == 0 )
+		return(0)
+	return((yesRatio+noRatio+maybeRatio)/number)
 }
 
 #SCRIPT
@@ -70,7 +98,7 @@ distances <- apply(friends.flat.ids,1,function(x)getDistanceUsers(x[1],x[2]))
 #distances <- distances[!is.na(distances)]
 
 # Ratio of events with the same interest
-ratio <- apply(friends.flat.ids,1,function(x)getInterestSimilarity(users$user_id[x[1]],users$user_id[x[2]]))
+common.interest <- apply(friends.flat.ids,1,function(x)getInterestSimilarity(x[1],x[2]))
 
 # Events together
 event.attendees$yes <- split_field(event.attendees$yes)
@@ -98,15 +126,13 @@ no[,2] <- match(no[,2],users$user_id)
 maybe[,2] <- match(maybe[,2],users$user_id)
 save(yes,no,maybe,file="data/eventatt_flat.Rdata")
 
-
-
-save(distances,ratio,common.events,file="data/weights.Rdata")
-
-
-common.events <- apply(friends.flat.ids,1,)
+common.attendance <- apply(friends.flat.ids,1,function(x)getRatioEventsTogether(x[1],x[2]))
+save(distances,common.interest,common.attendance,file="data/weights.Rdata")
 
 # Weights for the edges
-weights <- distances/max(distances) + (1-ratio) + 1e-5
+distances[!is.na(distances)] <- distances[!is.na(distances)]/max(distances[!is.na(distances)])
+distances[is.na(distances)] <- rep(1,sum(is.na(distances)))
+weights <- distances + 0.5*(1-common.interest) + 0.5*(1-common.attendance)
 
 # Generating the graph
 g <- graph.edgelist(friends.flat.ids, directed=FALSE)
@@ -116,14 +142,45 @@ fc <- fastgreedy.community(g,weights=weights)
 # membership(fc)
 # sizes(fc)
 
-save(friends.flat.ids,distances,ratio,fc,file="data/graph.Rdata")
+save(g,fc,weights,file="data/graph.Rdata")
 
 # Model
-train.clusters <- train
-train.clusters$cluster_id <- membership(fc)[match(train$user_id,users$user_id)]
-train.clusters$interested.num <- as.numeric(as.character(train.clusters$interested.num))
+train.new <- data.frame(event_id=train$event_id)
+train.new$cluster_id <- membership(fc)[match(train$user_id,users$user_id)]
+train.new$interested.num <- as.numeric(as.character(train$interested.num))
+train.new <- ddply(train.new,.variables=c("cluster_id","event_id"),.fun=function(x)data.frame(interested=mean(x$interested.num)),.progress="text")
 
-train.2 <- ddply(train.clusters,.variables=c("cluster_id","event_id"),.fun=function(x)data.frame(interested=mean(x$interested.num)),.progress="text")
+test.new <- data.frame(event_id=test$event_id)
+test.new$cluster_id <- membership(fc)[match(test$user_id,users$user_id)]
+test.new <- unique(test.new)
 
+# Mean coordinates for the clusters
+clusters <- data.frame(cluster_id=1:length(sizes(fc)))
+clusters$cluster_lat <- unlist(lapply(clusters$cluster_id,function(x)mean(users$Latitude[!is.na(users$Latitude)&membership(fc)==x])))
+clusters$cluster_lng <- unlist(lapply(clusters$cluster_id,function(x)mean(users$Longitude[!is.na(users$Longitude)&membership(fc)==x])))
 
-apply()
+# Generate the data frame to use in the model
+events.temp <- events[,c(1,8:113)]
+events.temp$event_id <- as.numeric(as.character(events$event_id))
+
+train.clusters <- join(train.new,clusters,type="inner")
+train.clusters <- join(train.clusters,events.temp,type="inner")
+test.clusters <- join(test.new,clusters,type="inner")
+test.clusters <- join(test.clusters,events.temp,type="inner")
+
+train.clusters$event_start_time_year <- as.numeric(as.character(train.clusters$event_start_time_year))
+train.clusters$event_start_time_month <- as.numeric(as.character(train.clusters$event_start_time_month))
+
+test.clusters$event_start_time_year <- as.numeric(as.character(test.clusters$event_start_time_year))
+test.clusters$event_start_time_month <- as.numeric(as.character(test.clusters$event_start_time_month))
+
+save(train.clusters,test.clusters,file="data/data_clusters.Rdata")
+
+# Modelling
+formula <- as.formula(paste("interested ~",
+								  # 8:ncol(train.clusters): without coordinates
+								  # 4:ncol(train.clusters): with coordinates
+                                  paste(names(train.clusters)[8:ncol(train.clusters)], collapse="+")))
+
+model <- lm(formula, data=train.clusters)
+pred <- predict(model, test.clusters)
