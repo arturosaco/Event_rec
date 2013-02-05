@@ -1,10 +1,6 @@
 library(ProjectTemplate)
 load.project()
 
-library(doMC)
-registerDoMC(4)
-getDoParWorkers()
-
 # =============
 # = Functions =
 # =============
@@ -38,10 +34,6 @@ test.gbm.model <- function(data, model, range.trees){
   })
 }
 
-### Local TODO
-# - Compare results of model with/without distance
-#    compare models locally
-# - Try dimensionality reduction on word counts
 
 # ================
 # = Prepare data =
@@ -79,100 +71,6 @@ events$event_id <- as.numeric(as.character(events$event_id))
 events$creator_id <- as.numeric(as.character(events$creator_id))
 
 train.1 <- join(train, events)
-
-# =================================================
-# = K-fold cross validation with objective metric =
-# =================================================
-
-k <- 10
-partition <- data.frame(user_id = unique(train$user_id),
- partition = sample(1:k, length(unique(train$user_id)), replace = TRUE))
-formu <- as.formula(paste("interested.num ~",
-    paste(c("event_seen_time",
-      "event_seen_time_month", "event_seen_time_day",
-      "event_start_time_year", "event_start_time_month",
-      "event_start_time_day", "c_other", "distance", "birthyear",
-      "gender", "joinedAt_day", "joinedAt_month", "joinedAt_year",
-      "friends.yes", "friends.no", "friends.maybe", "friends.invited + "),
-       collapse = " + "),
-    paste("c_", 1:100, collapse = "+", sep = "")))
-
-### Couldn't use "event_seen_time_year" since it has only one value
-
-part.scores <- ldply(1:k, function(part.int){
-  data.big <- train.1[train.1$user_id %in% 
-    partition[partition$partition != part.int, "user_id"], ]
-  data.small <- train.1[train.1$user_id %in% 
-    partition[partition$partition == part.int, "user_id"], ]
-  mod <- fit.gbm.model(data = data.big,
-     interaction.par = 6,
-     shrinkage.par = 0.001,
-     max.n.trees = 7500,
-     distribution = "adaboost")
-  scores <- test.gbm.model(data = data.small, mod, range.trees = c(100, 7500))
-  scores$partition <- part.int
-  scores
-}, .parallel = TRUE)
-
-score.mean <- ddply(part.scores, "n.trees", summarise, score = mean(score))
-ggplot(score.mean, aes(x = n.trees, y = -score)) + geom_line()
-
-# ================
-# = Single model =
-# ================
-
-mod.gbm <- fit.gbm.model(data = train.1,
-  interaction.par = 6,
-  shrinkage.par = 0.001,
-  max.n.trees = 15000,
-  distribution.par = "bernoulli")
-
-train.1$event_seen_time <- as.numeric(train.1$event_seen_time)
-cv.gbm <- gbm(formula = formu, data = train.1,
-  distribution = "bernoulli",
-  interaction.depth = 6,
-  shrinkage = 0.001, 
-  n.trees = 10000,
-  cv.fold = 10)
-
-
-X <- model.matrix(formu, data = train.2)
-Y <- train.1$interested.num
-
-grid <- data.frame(expand.grid(.n.trees = 5000)), 
-  .shrinkage = c(0.1, 0.01, 0.001), .interaction.depth = 1:10))
-tune.gbm <- train(x = X, y = Y, 
-                 method = "gbm", 
-                 tuneGrid = grid)
-                 
-
-tune.gbm <- tune(gbm, train.x = formu, data = train.1,
-  shrinkage = c(0.001), interaction.depth = 1:10,
-  n.trees = 10000, n.minobsinnode = 2:15, distribution = "bernoulli")
-
-# ====================
-# = Make predictions =
-# ====================
-
-test.1 <- join(test, events)
-X.new <- model.matrix(formu, data = test.1)
-preds <- data.frame(test.1[, c("user_id", "event_id")],
-    preds = predict(object = mod.gbm, newdata = X.new, n.trees = 7500))
-
-# ==============
-# = Submission =
-# ==============
-
-preds.1 <- ddply(preds, "user_id", function(sub){
-    paste(sub[order(sub$preds, decreasing = TRUE), "event_id"], collapse = ", ")  
-  })
-
-names(preds.1) <- c("User", "Events")
-write.csv(preds.1, file = "predictions/gbm.csv")
-
-# ==========================
-# = Your Comment Goes here =
-# ==========================
 
 
 users$user_id <- as.numeric(as.character(users$user_id))
@@ -215,12 +113,14 @@ train.4$user_city <- as.character(train.4$user_city)
 train.4$user_country <- as.character(train.4$user_country)
 train.4[is.na(train.4$user_city), "user_city"] <- "other"
 train.4[is.na(train.4$user_country), "user_country"] <- "other"
-
-train.4$user_city <- factor(train.4$user_city, levels = levels.user_city)
-train.4$user_country <- factor(train.4$user_country, levels = levels.user_country)
-train.4$event_city <- factor(train.4$event_city, levels = levels.event_city)
-train.4$event_country <- factor(train.4$event_country, levels = levels.event_country)
-
+train.4$user_city <- factor(train.4$user_city, levels = 
+  levels.user_city)
+train.4$user_country <- factor(train.4$user_country, 
+  levels = levels.user_country)
+train.4$event_city <- factor(train.4$event_city, 
+  levels = levels.event_city)
+train.4$event_country <- factor(train.4$event_country, 
+  levels = levels.event_country)
 
 # ==================
 # = Stratified gbm =
@@ -233,8 +133,10 @@ formu.red <-  as.formula(paste("user_id ~",
       "event_seen_time_month", "event_seen_time_day",
       "event_start_time_month",
       "event_start_time_day", "c_other", "distance", "birthyear",
-      "gender", "joinedAt_day", "joinedAt_month", "event_city", "event_country",
-      "friends.yes", "friends.no", "friends.maybe", "user_city", "user_country",
+      "gender", "joinedAt_day", "joinedAt_month", "event_city",
+      "event_country",
+      "friends.yes", "friends.no", "friends.maybe", "user_city", 
+      "user_country",
       "friends.invited + "),
        collapse = " + "),
     paste("c_", 1:100, collapse = "+", sep = "")))
@@ -252,8 +154,10 @@ formu.comp <- as.formula(paste("user_id ~",
       "event_seen_time_month", "event_seen_time_day",
       "event_start_time_month",
       "event_start_time_day", "c_other", "event_city", "event_country",
-      "gender", "joinedAt_day", "joinedAt_month", "user_city", "user_country",
-      "friends.yes", "friends.no", "friends.maybe", "friends.invited + "),
+      "gender", "joinedAt_day", "joinedAt_month", "user_city", 
+      "user_country",
+      "friends.yes", "friends.no", "friends.maybe",
+      "friends.invited + "),
        collapse = " + "),
     paste("c_", 1:100, collapse = "+", sep = "")))
 
@@ -264,7 +168,6 @@ mod.gbm.comp <- fit.gbm.model(data = train.4,
   max.n.trees = 500,
   distribution = "bernoulli",
   formu.par = formu.comp)
-
 
 # ===============================
 # = Make stratified predictions =
@@ -280,15 +183,11 @@ test.2 <- join(test.1, users[, c("user_id", "birthyear", "gender",
 
 test.3 <- join(test.2, att.c[att.c$user_id %in% test.2$user_id & 
   att.c$event_id %in% test.2$event_id,])
-
 test.3[, grep("friends.", names(test.3), value = TRUE)][
   is.na(test.3[, grep("friends.", names(test.3), value = TRUE)])] <- 0
-
 test.3$birthyear <- as.numeric(as.character(test.3$birthyear))
 
 test.4 <- join(test.3, aux.year)
-
-
 test.4$user_city <- as.character(test.4$user_city)
 test.4$user_country <- as.character(test.4$user_country)
 test.4$event_city <- as.character(test.4$event_city)
@@ -298,17 +197,17 @@ test.4[is.na(test.4$event_city), "event_city"] <- "other"
 test.4[is.na(test.4$event_country), "event_country"] <- "other"
 test.4[is.na(test.4$user_city), "user_city"] <- "other"
 test.4[is.na(test.4$user_country), "user_country"] <- "other"
-
-test.4$user_city <- factor(test.4$user_city, levels = levels.user_city)
-test.4$user_country <- factor(test.4$user_country, levels = levels.user_country)
-test.4$event_city <- factor(test.4$event_city, levels = levels.event_city)
-test.4$event_country <- factor(test.4$event_country, levels = levels.event_country)
-
+test.4$user_city <- factor(test.4$user_city, 
+  levels = levels.user_city)
+test.4$user_country <- factor(test.4$user_country,
+ levels = levels.user_country)
+test.4$event_city <- factor(test.4$event_city, 
+  levels = levels.event_city)
+test.4$event_country <- factor(test.4$event_country, 
+  levels = levels.event_country)
 
 test.red <- test.4[!is.na(test.4$distance) & !is.na(test.4$birthyear),]
 test.comp <- test.4[is.na(test.4$distance) | is.na(test.4$birthyear), ]
-
-
 
 X.new.red <- model.matrix(formu.red, data = test.red)
 X.new.comp <- model.matrix(formu.comp, data = test.comp)
@@ -324,7 +223,6 @@ aux.red <- mod.gbm.red$vars.index[names(mod.gbm.red$vars.index) %in%
 aux.comp <- mod.gbm.comp$vars.index[names(mod.gbm.comp$vars.index) %in%
  colnames(X.new.comp)]
 
-
 preds.red <- data.frame(test.red[, c("user_id", "event_id")],
     preds = predict(object = mod.gbm.red$mod, 
       newdata = X.new.red[, aux.red],
@@ -339,15 +237,9 @@ preds.comp <- data.frame(test.comp[, c("user_id", "event_id")],
 
 preds <- rbind(preds.red, preds.comp)
 
-
 preds.1 <- ddply(preds, "user_id", function(sub){
     paste(sub[order(sub$preds, decreasing = TRUE), "event_id"], collapse = ", ")  
   })
 
 names(preds.1) <- c("User", "Events")
 write.csv(preds.1, file = "predictions/gbm_strat.csv")
-
-
-
-
-
