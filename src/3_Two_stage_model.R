@@ -59,6 +59,8 @@ load("data/stage_2.Rdata")
 # event.attendees.1 <- rbind(event.attendees.maybe, event.attendees.no, event.attendees.yes, event.attendees.invited)
 # cache("att.1")
 
+load("cache/friends.3.RData")
+load("cache/att.1.RData")
 friends.4 <- join(att.1[att.1$user_id %in% friends.3$user_id, ], friends.3)
 
 ### Join friends table with events table
@@ -69,63 +71,22 @@ events$event_id <- as.character(events$event_id)
 friends.4$event_id <- as.character(friends.4$event_id)
 events$user_id <- NULL
 events$country <- NULL
-fr.ev <- join(friends.4, events, by = "event_id")
+fr.ev <- join(friends.4[!friends.4$user_id %in% 
+  union(train$user_id, test$id$user_id)
+  , ], events, by = "event_id")
 
-# ====================
-# = Set verification =
-# ====================
+names(fr.ev)[names(fr.ev) == "Latitude"] <- "user_lat"
+names(fr.ev)[names(fr.ev) == "Longitude"] <- "user_lng"
 
-length(unique(train$user))
-length(intersect(train$user, users.friends$user))
-# All the users in the train file have info in the users-friends table
-
-length(intersect(intersect(train$user, users.friends$user), users$user_id))
-# All have info in both the user and user-friends table
-
-### Moving on to the users friends
-# number of users that are friends with someone in the training set
-length(unique(friends.1$friend))
-
-# number of those that have info in the user table
-length(intersect(friends.1$friend, users$user_id))
-
-# number of those that appear at least once in the attendance table
-length(intersect(intersect(friends.1$friend, users$user_id), att.1$user_id))
-
-# number of unique events in the attendance file
-# related to users who are friends with someone in the train set
-# and who have info in the user table 
-
-length(unique(att.1[att.1$user_id %in% 
-  intersect(friends.1$friend, users$user_id), 
-  "event"]))
-
-# number of those that appear in the training set
-
-length(intersect(unique(att.1[att.1$user_id %in% 
-  intersect(friends.1$friend, users$user_id), 
-  "event"]), train$event))
-
-
-# all of those should appear in the events table
-
-table(intersect(unique(att.1[att.1$user_id %in% 
-  intersect(friends.1$friend, users$user_id), 
-  "event"]), train$event) %in% events$event_id)
-
-# and they do
-
-#Lists of users ids and events ids that should be on the friends-events table
-
-users.ids.all <- intersect(intersect(friends.1$friend, 
-  users$user_id), att.1$user_id)
-events.ids.all <- intersect(unique(att.1[att.1$user_id %in% 
-  intersect(friends.1$friend, users$user_id), 
-  "event"]), train$event)
+### There are 55K rows of info that we are not using!
 
 # =========
 # = Model =
 # =========
+
+train.1 <- join(train, events)
+
+intersect(names(train.1), names(fr.ev))
 
 fr.ev$birthyear <- as.numeric(as.character(fr.ev$birthyear))
 fr.ev$timezone <- factor(fr.ev$timezone)
@@ -153,11 +114,11 @@ mod.cv <- cv.glmnet(x = X, y = fr.ev.1$int.num, family = "gaussian",
 
 mod <- glmnet(x = X, y = fr.ev.1$int.num, family = "gaussian", 
   lambda = mod.cv$lambda.min)
-mod.1 <- lm(formu, data = fr.ev.1)
 
 # ========
 # = TODO =
 # ========
 
 # - group the birthyear in groups of 5 and add a missning class, treat as factor
+# - fill missing values in distance with median
 
