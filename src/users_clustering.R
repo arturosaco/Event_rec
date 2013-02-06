@@ -133,14 +133,22 @@ save(distances,common.interest,common.attendance,file="data/weights.Rdata")
 distances[!is.na(distances)] <- distances[!is.na(distances)]/max(distances[!is.na(distances)])
 distances[is.na(distances)] <- rep(1,sum(is.na(distances)))
 weights <- distances + 0.5*(1-common.interest) + 0.5*(1-common.attendance)
+E(g)$weight <- weights
 
 # Generating the graph
 g <- graph.edgelist(friends.flat.ids, directed=FALSE)
 
 # Clustering
-fc <- fastgreedy.community(g,weights=weights)
+fc <- fastgreedy.community(g)
 # membership(fc)
 # sizes(fc)
+
+# Connected subgraph (only one component with more than 100 users)
+v <- (1:nrow(users))[clusters(g)$membership==1]
+subg <- induced.subgraph(g, v)
+fc.w <- walktrap.community(subg)
+
+fc.eb <- edge.betweenness.community(subg)
 
 save(g,fc,weights,file="data/graph.Rdata")
 
@@ -174,7 +182,7 @@ train.clusters$event_start_time_month <- as.numeric(as.character(train.clusters$
 test.clusters$event_start_time_year <- as.numeric(as.character(test.clusters$event_start_time_year))
 test.clusters$event_start_time_month <- as.numeric(as.character(test.clusters$event_start_time_month))
 
-save(train.clusters,test.clusters,file="data/data_clusters.Rdata")
+save(train.clusters,test.clusters,clusters,file="data/data_clusters.Rdata")
 
 # Modelling
 formula <- as.formula(paste("interested ~",
@@ -184,3 +192,18 @@ formula <- as.formula(paste("interested ~",
 
 model <- lm(formula, data=train.clusters)
 pred <- predict(model, test.clusters)
+
+#Building the new feature
+match2columns <- function(value1, value2, table)
+{
+	index <- 1:nrow(table)
+	return(index[ table[,1]==value1 & table[,2]==value2 ])
+}
+
+new_feature <-
+pred[
+  apply(train[,1:2],1,
+        function(x)
+          match2columns(membership(fc)[match(x[1],users$user_id)],
+                                   x[2],
+                                   train.clusters[1:2]))]
