@@ -80,13 +80,25 @@ names(fr.ev)[names(fr.ev) == "Longitude"] <- "user_lng"
 
 ### There are 55K rows of info that we are not using!
 
+# ==========================
+# = Code for grouping year =
+# ==========================
+groupYear <- function(birthyear){
+  aux.year <- data.frame(birthyear = min(birthyear, na.rm = TRUE):
+    max(birthyear, na.rm = TRUE), year.group = NA)
+  init <- min(birthyear) - (min(birthyear) %% 5)
+  for(k in 1:nrow(aux.year)){
+    if(aux.year[k, 1] %% 5 == 0){
+      init <- aux.year[k, 1]
+    }
+    aux.year[k, 2] <- init
+  }
+  aux.year$year.group <- factor(aux.year$year.group)
+  return(aux.year[, 2])
+}
 # =========
 # = Model =
 # =========
-
-train.1 <- join(train, events)
-
-intersect(names(train.1), names(fr.ev))
 
 fr.ev$birthyear <- as.numeric(as.character(fr.ev$birthyear))
 fr.ev$timezone <- factor(fr.ev$timezone)
