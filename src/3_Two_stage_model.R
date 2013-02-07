@@ -84,17 +84,8 @@ names(fr.ev)[names(fr.ev) == "Longitude"] <- "user_lng"
 # = Code for grouping year =
 # ==========================
 groupYear <- function(birthyear){
-  aux.year <- data.frame(birthyear = min(birthyear, na.rm = TRUE):
-    max(birthyear, na.rm = TRUE), year.group = NA)
-  init <- min(birthyear) - (min(birthyear) %% 5)
-  for(k in 1:nrow(aux.year)){
-    if(aux.year[k, 1] %% 5 == 0){
-      init <- aux.year[k, 1]
-    }
-    aux.year[k, 2] <- init
-  }
-  aux.year$year.group <- factor(aux.year$year.group)
-  return(aux.year[, 2])
+  out <- birthyear - (birthyear %% 5)
+  factor(out, seq(min(out), max(out), by = 5))
 }
 # =========
 # = Model =
