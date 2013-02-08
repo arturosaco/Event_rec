@@ -132,11 +132,11 @@ save(distances,common.interest,common.attendance,file="data/weights.Rdata")
 # Weights for the edges
 distances[!is.na(distances)] <- distances[!is.na(distances)]/max(distances[!is.na(distances)])
 distances[is.na(distances)] <- rep(1,sum(is.na(distances)))
-weights <- distances + 0.5*(1-common.interest) + 0.5*(1-common.attendance)
-E(g)$weight <- weights
+weights <- (1-distances) + 0.5*common.interest + 0.5*common.attendance + 1e-5
 
 # Generating the graph
 g <- graph.edgelist(friends.flat.ids, directed=FALSE)
+E(g)$weight <- weights
 
 # Clustering
 fc <- fastgreedy.community(g)
@@ -144,13 +144,12 @@ fc <- fastgreedy.community(g)
 # sizes(fc)
 
 # Connected subgraph (only one component with more than 100 users)
-v <- (1:nrow(users))[clusters(g)$membership==1]
-subg <- induced.subgraph(g, v)
-fc.w <- walktrap.community(subg)
+#v <- (1:nrow(users))[clusters(g)$membership==1]
+#subg <- induced.subgraph(g, v)
+#fc.w <- walktrap.community(subg)
+#fc.eb <- edge.betweenness.community(subg)
 
-fc.eb <- edge.betweenness.community(subg)
-
-save(g,fc,weights,file="data/graph.Rdata")
+save(g.users,fc.users,weights.users,file="data/user_graph.Rdata")
 
 # Model
 train.new <- data.frame(event_id=train$event_id)
@@ -207,3 +206,11 @@ pred[
           match2columns(membership(fc)[match(x[1],users$user_id)],
                                    x[2],
                                    train.clusters[1:2]))]
+
+pred_test <-
+pred[
+  apply(test[,1:2],1,
+        function(x)
+          match2columns(membership(fc)[match(x[1],users$user_id)],
+                                   x[2],
+								   test.clusters[1:2]))]
