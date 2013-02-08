@@ -195,11 +195,32 @@ events[events$event_id %in% train[2, "event_id"] , c("event_lat", "event_lng")]
 train$distance <- apply(train, 1, getDistance)
 test$distance <- apply(test, 1, getDistance)
 
-train$user_id <- as.numeric(as.character(train$user_id))
-test$user_id <- as.numeric(as.character(test$user_id))
-train$event_id <- as.numeric(as.character(train$event_id))
-test$event_id <- as.numeric(as.character(test$event_id))
+
 names(event.attendees)[names(event.attendees) == "event"] <- "event_id"
+
+# some additional corrections
+
+test$user_id <- as.numeric(as.character(test$user_id))
+train$user_id <- as.numeric(as.character(train$user_id))
+users$user_id <- as.numeric(as.character(users$user_id))
+events$event_id <- as.numeric(as.character(events$event_id))
+test$event_id <- as.numeric(as.character(test$event_id))
+train$event_id <- as.numeric(as.character(train$event_id))
+
+#change birthyear to age
+cur.year <- as.numeric(as.character(years(Sys.Date())))
+users$birthyear <- as.numeric(as.character(users$birthyear))
+users$age <- cur.year - as.numeric(as.character(users$birthyear))
+
+users$gender[users$gender==""] <- NA
+users$gender <- factor(users$gender)
+users$joinedAt_day <- weekdays(users$joinedAt)
+
+events$event_city <- as.factor(events$event_city)
+events$event_state <- as.factor(events$event_state)
+events$event_zip <- as.factor(events$event_zip)
+events$event_country <- as.factor(events$event_country)
+
 
 # once the recoding is done, uncomment:
 save("train","test","users","users.friends","event.attendees","events",
