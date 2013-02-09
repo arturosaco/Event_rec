@@ -132,7 +132,7 @@ save(distances,common.interest,common.attendance,file="data/weights.Rdata")
 # Weights for the edges
 distances[!is.na(distances)] <- distances[!is.na(distances)]/max(distances[!is.na(distances)])
 distances[is.na(distances)] <- rep(1,sum(is.na(distances)))
-weights <- (1-distances) + 0.5*common.interest + 0.5*common.attendance + 1e-5
+weights <- distances + 0.5*(1-common.interest) + 0.5*(1-common.attendance) + 1e-5
 
 # Generating the graph
 g <- graph.edgelist(friends.flat.ids, directed=FALSE)
@@ -199,18 +199,21 @@ match2columns <- function(value1, value2, table)
 	return(index[ table[,1]==value1 & table[,2]==value2 ])
 }
 
-new_feature <-
-pred[
-  apply(train[,1:2],1,
-        function(x)
-          match2columns(membership(fc)[match(x[1],users$user_id)],
-                                   x[2],
-                                   train.clusters[1:2]))]
+users$user_id <- as.numeric(as.character(users$user_id))
+events$event_id <- as.numeric(as.character(events$event_id))
 
-pred_test <-
+pred.test <-
 pred[
   apply(test[,1:2],1,
         function(x)
-          match2columns(membership(fc)[match(x[1],users$user_id)],
-                                   x[2],
-								   test.clusters[1:2]))]
+          match2columns(x[2],
+                        membership(fc)[match(x[1],users$user_id)],
+                        test.clusters[,1:2]))]
+
+pred.complete <- data.frame(user=test$user_id,event=test$event_id,pred=pred.test)
+
+preds.submit <- ddply(pred.complete, "user", function(sub){
+  paste(sub[order(sub$pred, decreasing = TRUE), "event"], collapse = ", ")  
+  })
+names(preds.submit) <- c("User", "Events")
+write.csv(preds.submit, file = "data/users_clustering.csv")
