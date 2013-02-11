@@ -1,6 +1,19 @@
 library(ProjectTemplate)
 load.project()
 
+# =============
+# = Functions =
+# =============
+
+# x is the male/female vector(tupple) of an event (use in tapply)
+labelMF <- function(x){
+  ifelse(length(x[x=="female"])>length(x[x=="male"]),"female","male")
+}
+
+# ================
+# = Data munging =
+# ================
+
 load("data/stage_2.Rdata")
 
 ## Un-list the attendance file
@@ -42,8 +55,34 @@ evAtt.no.uData$birthyear <- as.numeric(levels(evAtt.no.uData$birthyear))[evAtt.n
 evAtt.maybe.uData$birthyear <- as.numeric(levels(evAtt.maybe.uData$birthyear))[evAtt.maybe.uData$birthyear]
 evAtt.invited.uData$birthyear <- as.numeric(levels(evAtt.invited.uData$birthyear))[evAtt.invited.uData$birthyear]
 
-#tapply to find means by ignoring NA's
-foo <- tapply(evAtt.yes.uData$birthyear,evAtt.yes.uData$event,mean,na.rm=TRUE)
-foo <- tapply(evAtt.no.uData$birthyear,evAtt.no.uData$event,mean,na.rm=TRUE)
-foo <- tapply(evAtt.maybe.uData$birthyear,evAtt.maybe.uData$event,mean,na.rm=TRUE)
-foo <- tapply(evAtt.invited.uData$birthyear,evAtt.invited.uData$event,mean,na.rm=TRUE)
+#order sets by event
+evAtt.yes.uData <- evAtt.yes.uData[order(evAtt.yes.uData$event),]
+evAtt.no.uData <- evAtt.no.uData[order(evAtt.no.uData$event),]
+evAtt.maybe.uData <- evAtt.maybe.uData[order(evAtt.maybe.uData$event),]
+evAtt.invited.uData <- evAtt.invited.uData[order(evAtt.invited.uData$event),]
+
+#tapply to a)find means by ignoring NA's b)vote for male/female
+evAtt.yes.labels <- data.frame(unique(evAtt.yes.uData$event),
+             tapply(evAtt.yes.uData$birthyear,evAtt.yes.uData$event,mean,na.rm=TRUE),
+             tapply(evAtt.yes.uData$gender,evAtt.yes.uData$event,labelMF))
+colnames(evAtt.yes.labels) <- c("event_id","YesBirthyear","YesGender")
+
+evAtt.no.labels <- data.frame(unique(evAtt.no.uData$event),
+             tapply(evAtt.no.uData$birthyear,evAtt.no.uData$event,mean,na.rm=TRUE),
+             tapply(evAtt.no.uData$gender,evAtt.no.uData$event,labelMF))
+colnames(evAtt.no.labels) <- c("event_id","NoBirthyear","NoGender")
+
+evAtt.maybe.labels <- data.frame(unique(evAtt.maybe.uData$event),
+             tapply(evAtt.maybe.uData$birthyear,evAtt.maybe.uData$event,mean,na.rm=TRUE),
+             tapply(evAtt.maybe.uData$gender,evAtt.maybe.uData$event,labelMF))
+colnames(evAtt.maybe.labels) <- c("event_id","MaybeBirthyear","MaybeGender")
+
+evAtt.invited.labels <- data.frame(unique(evAtt.invited.uData$event),
+             tapply(evAtt.invited.uData$birthyear,evAtt.invited.uData$event,mean,na.rm=TRUE),
+             tapply(evAtt.invited.uData$gender,evAtt.invited.uData$event,labelMF))
+colnames(evAtt.invited.labels) <- c("event_id","InvBirthyear","InvGender")
+
+save("evAtt.yes.labels",file="data/evAtt.yes.labels.RData")
+save("evAtt.no.labels",file="data/evAtt.no.labels.RData")
+save("evAtt.maybe.labels",file="data/evAtt.maybe.labels.RData")
+save("evAtt.invited.labels",file="data/evAtt.invited.labels.RData")
