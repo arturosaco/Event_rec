@@ -132,17 +132,24 @@ save(distances,common.interest,common.attendance,file="data/weights.Rdata")
 # Weights for the edges
 distances[!is.na(distances)] <- distances[!is.na(distances)]/max(distances[!is.na(distances)])
 distances[is.na(distances)] <- rep(1,sum(is.na(distances)))
-weights <- distances + 0.5*(1-common.interest) + 0.5*(1-common.attendance)
+weights <- distances + 0.5*(1-common.interest) + 0.5*(1-common.attendance) + 1e-5
 
 # Generating the graph
 g <- graph.edgelist(friends.flat.ids, directed=FALSE)
+E(g)$weight <- weights
 
 # Clustering
-fc <- fastgreedy.community(g,weights=weights)
+fc <- fastgreedy.community(g)
 # membership(fc)
 # sizes(fc)
 
-save(g,fc,weights,file="data/graph.Rdata")
+# Connected subgraph (only one component with more than 100 users)
+#v <- (1:nrow(users))[clusters(g)$membership==1]
+#subg <- induced.subgraph(g, v)
+#fc.w <- walktrap.community(subg)
+#fc.eb <- edge.betweenness.community(subg)
+
+save(g.users,fc.users,weights.users,file="data/user_graph.Rdata")
 
 # Model
 train.new <- data.frame(event_id=train$event_id)
@@ -174,7 +181,7 @@ train.clusters$event_start_time_month <- as.numeric(as.character(train.clusters$
 test.clusters$event_start_time_year <- as.numeric(as.character(test.clusters$event_start_time_year))
 test.clusters$event_start_time_month <- as.numeric(as.character(test.clusters$event_start_time_month))
 
-save(train.clusters,test.clusters,file="data/data_clusters.Rdata")
+save(train.clusters,test.clusters,clusters,file="data/data_clusters.Rdata")
 
 # Modelling
 formula <- as.formula(paste("interested ~",
@@ -184,3 +191,29 @@ formula <- as.formula(paste("interested ~",
 
 model <- lm(formula, data=train.clusters)
 pred <- predict(model, test.clusters)
+
+#Building the new feature
+match2columns <- function(value1, value2, table)
+{
+	index <- 1:nrow(table)
+	return(index[ table[,1]==value1 & table[,2]==value2 ])
+}
+
+users$user_id <- as.numeric(as.character(users$user_id))
+events$event_id <- as.numeric(as.character(events$event_id))
+
+pred.test <-
+pred[
+  apply(test[,1:2],1,
+        function(x)
+          match2columns(x[2],
+                        membership(fc)[match(x[1],users$user_id)],
+                        test.clusters[,1:2]))]
+
+pred.complete <- data.frame(user=test$user_id,event=test$event_id,pred=pred.test)
+
+preds.submit <- ddply(pred.complete, "user", function(sub){
+  paste(sub[order(sub$pred, decreasing = TRUE), "event"], collapse = ", ")  
+  })
+names(preds.submit) <- c("User", "Events")
+write.csv(preds.submit, file = "data/users_clustering.csv")

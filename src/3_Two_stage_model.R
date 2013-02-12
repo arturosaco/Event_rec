@@ -59,6 +59,8 @@ load("data/stage_2.Rdata")
 # event.attendees.1 <- rbind(event.attendees.maybe, event.attendees.no, event.attendees.yes, event.attendees.invited)
 # cache("att.1")
 
+load("cache/friends.3.RData")
+load("cache/att.1.RData")
 friends.4 <- join(att.1[att.1$user_id %in% friends.3$user_id, ], friends.3)
 
 ### Join friends table with events table
@@ -69,59 +71,39 @@ events$event_id <- as.character(events$event_id)
 friends.4$event_id <- as.character(friends.4$event_id)
 events$user_id <- NULL
 events$country <- NULL
-fr.ev <- join(friends.4, events, by = "event_id")
+fr.ev <- join(friends.4[!friends.4$user_id %in% 
+  union(train$user_id, test$id$user_id)
+  , ], events, by = "event_id")
 
-# ====================
-# = Set verification =
-# ====================
+names(fr.ev)[names(fr.ev) == "Latitude"] <- "user_lat"
+names(fr.ev)[names(fr.ev) == "Longitude"] <- "user_lng"
 
-length(unique(train$user))
-length(intersect(train$user, users.friends$user))
-# All the users in the train file have info in the users-friends table
+### There are 55K rows of info that we are not using!
 
-length(intersect(intersect(train$user, users.friends$user), users$user_id))
-# All have info in both the user and user-friends table
+# ==========================
+# = Code for grouping year =
+# ==========================
+groupYear <- function(birthyear){
+  out <- birthyear - (birthyear %% 5)
+  factor(out, seq(min(birthyear), max(birthyear), by = 5))
+}
 
-### Moving on to the users friends
-# number of users that are friends with someone in the training set
-length(unique(friends.1$friend))
-
-# number of those that have info in the user table
-length(intersect(friends.1$friend, users$user_id))
-
-# number of those that appear at least once in the attendance table
-length(intersect(intersect(friends.1$friend, users$user_id), att.1$user_id))
-
-# number of unique events in the attendance file
-# related to users who are friends with someone in the train set
-# and who have info in the user table 
-
-length(unique(att.1[att.1$user_id %in% 
-  intersect(friends.1$friend, users$user_id), 
-  "event"]))
-
-# number of those that appear in the training set
-
-length(intersect(unique(att.1[att.1$user_id %in% 
-  intersect(friends.1$friend, users$user_id), 
-  "event"]), train$event))
-
-
-# all of those should appear in the events table
-
-table(intersect(unique(att.1[att.1$user_id %in% 
-  intersect(friends.1$friend, users$user_id), 
-  "event"]), train$event) %in% events$event_id)
-
-# and they do
-
-#Lists of users ids and events ids that should be on the friends-events table
-
-users.ids.all <- intersect(intersect(friends.1$friend, 
-  users$user_id), att.1$user_id)
-events.ids.all <- intersect(unique(att.1[att.1$user_id %in% 
-  intersect(friends.1$friend, users$user_id), 
-  "event"]), train$event)
+deg2rad <- function(deg) (deg*pi/180)
+getDistanceLatLong <- function(row)
+{
+	lat1 <- as.numeric(row["user_lat"])
+	lat2 <- as.numeric(row["event_lat"])
+	lon1 <- as.numeric(row["user_lng"])
+	lon2 <- as.numeric(row["event_lng"])
+	r <- 6371
+	dLat <- deg2rad(lat2-lat1) 
+	dLon <- deg2rad(lon2-lon1); 
+  	a <-  sin(dLat/2) * sin(dLat/2) + cos(deg2rad(lat1)) * 
+          cos(deg2rad(lat2)) * sin(dLon/2) * sin(dLon/2)
+  	c <- 2 * atan2(sqrt(a), sqrt(1-a))
+  	d <- r * c # Distance in km
+  	return(d)
+}
 
 # =========
 # = Model =
@@ -130,34 +112,55 @@ events.ids.all <- intersect(unique(att.1[att.1$user_id %in%
 fr.ev$birthyear <- as.numeric(as.character(fr.ev$birthyear))
 fr.ev$timezone <- factor(fr.ev$timezone)
 
-fr.ev$lat <- as.character(fr.ev$lat)
-fr.ev$lng <- as.character(fr.ev$lng)
+fr.ev$user_lat <- as.character(fr.ev$user_lat)
+fr.ev$user_lng <- as.character(fr.ev$user_lng)
+fr.ev$event_lat <- as.character(fr.ev$event_lat)
+fr.ev$event_lng <- as.character(fr.ev$event_lng)
 
-fr.ev[fr.ev$lng == "", "lng"] <- NA
-#  paste("NA_", 1:sum(fr.ev$lng == ""), sep = "")
-fr.ev[fr.ev$lat == "", "lat"] <- NA
-#  paste("NA_", 1:sum(fr.ev$lat == ""), sep = "")
+fr.ev[!is.na(fr.ev$user_lng)&(fr.ev$user_lng == ""), "user_lng"] <- NA
+fr.ev[!is.na(fr.ev$user_lat)&(fr.ev$user_lat == ""), "user_lat"] <- NA
+fr.ev[!is.na(fr.ev$event_lng)&(fr.ev$event_lng == ""), "event_lng"] <- NA
+fr.ev[!is.na(fr.ev$event_lat)&(fr.ev$event_lat == ""), "event_lat"] <- NA
 
-fr.ev$lat <- scale(as.numeric(fr.ev$lat))
-fr.ev$lng <- scale(as.numeric(fr.ev$lng))
+fr.ev.1 <- fr.ev[!is.na(fr.ev$birthyear) & !is.na(fr.ev$user_lat) & !is.na(fr.ev$event_lat), ]
 
-fr.ev.1 <- fr.ev[!is.na(fr.ev$birthyear) & !is.na(fr.ev$lat), ]
+fr.ev.1$birthyear <- groupYear(fr.ev.1$birthyear)
+fr.ev.1$distance <- apply(fr.ev.1, 1, getDistanceLatLong)
 
-formu <- as.formula(paste("int.num ~ timezone + birthyear + gender + c_other+
- lat + lng + ", 
-  paste("c_", 1:100, sep = "", collapse = "+")))
+fr.ev.1$user_lat <- as.numeric(fr.ev.1$user_lat)
+fr.ev.1$user_lng <- as.numeric(fr.ev.1$user_lng)
+fr.ev.1$event_lat <- as.numeric(fr.ev.1$event_lat)
+fr.ev.1$event_lng <- as.numeric(fr.ev.1$event_lng)
+
+formu <- as.formula(paste("int.num ~ birthyear + gender + c_other+ distance + user_lat + ",
+                                          "user_lng + event_lat + event_lng + event_start_time_year + ",
+                                          "event_start_time_month + event_start_time_day + ", 
+                                          paste("c_", 1:100, sep = "", collapse = "+") ))
 X <- model.matrix(formu, data = fr.ev.1)
 
-mod.cv <- cv.glmnet(x = X, y = fr.ev.1$int.num, family = "gaussian",
-  nfolds = 10)
+mod.cv <- cv.glmnet(x = X, y = fr.ev.1$int.num, family = "gaussian", nfolds = 10)
+mod <- glmnet(x = X, y = fr.ev.1$int.num, family = "gaussian", lambda = mod.cv$lambda.min)
 
-mod <- glmnet(x = X, y = fr.ev.1$int.num, family = "gaussian", 
-  lambda = mod.cv$lambda.min)
-mod.1 <- lm(formu, data = fr.ev.1)
 
-# ========
-# = TODO =
-# ========
+# =========
+# = Prediction =
+# =========
 
-# - group the birthyear in groups of 5 and add a missning class, treat as factor
+train.fr.ev <- rbind(train[,setdiff(names(train),"interested.num")], test)
+users$user_id <- as.numeric(as.character(users$user_id))
+train.fr.ev <- join(train.fr.ev[,c("user_id","event_id","distance")],
+                           users[,c("user_id","birthyear","gender","Latitude","Longitude")])
+events$event_id <- as.numeric(as.character(events$event_id))
+train.fr.ev <- join(train.fr.ev, 
+                           events[,c("event_id","event_lat","event_lng","event_start_time_year",
+                   						  "event_start_time_month","event_start_time_day",
+                   						  "c_other",paste("c_", 1:100, sep=""))])
+names(train.fr.ev)[names(train.fr.ev) == "Latitude"] <- "user_lat"
+names(train.fr.ev)[names(train.fr.ev) == "Longitude"] <- "user_lng"
+train.fr.ev$birthyear <- as.numeric(as.character(train.fr.ev$birthyear))
+train.fr.ev$birthyear[!is.na(train.fr.ev$birthyear)] <- groupYear(train.fr.ev$birthyear[!is.na(train.fr.ev$birthyear)])
 
+train.fr.ev$int.num <- rep(0, nrow(train.fr.ev))
+
+predX <- model.matrix(formu, data = train.fr.ev)
+pred <- predict(mod, predX, type="link")
